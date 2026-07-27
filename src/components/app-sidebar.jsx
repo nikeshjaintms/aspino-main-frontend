@@ -44,6 +44,16 @@ const adminMenuItems = [
       },
     ],
   },
+   {
+    group: "Security & Access",
+    items: [
+      {
+        title: "Users",
+        href: "/admin/users",
+        icon: Users,
+      },
+    ],
+  },
   {
     group: "Masters",
     items: [
@@ -74,6 +84,7 @@ const adminMenuItems = [
       },
     ],
   },
+ 
 ];
 
 const userMenuItems = [
