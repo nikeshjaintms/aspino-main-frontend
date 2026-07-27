@@ -41,7 +41,7 @@ export function ConfirmDialog({
           </div>
         </div>
 
-        <DialogFooter className="p-4 bg-muted/40 border-t border-border/40 gap-2 sm:gap-2">
+        <DialogFooter className="m-0 p-4 bg-muted/40 border-t border-border/40 gap-2 sm:gap-2">
           <Button
             type="button"
             variant="outline"

@@ -24,14 +24,14 @@ export function GatePassHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
+        {/* <Button
           variant="outline"
           onClick={onExportPDF}
           className="rounded-xl font-bold gap-2 text-xs border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/20 h-11"
         >
           <Download className="h-4 w-4 text-sky-600 dark:text-sky-450" />
           Export Register PDF
-        </Button>
+        </Button> */}
 
         <Button
           variant="outline"

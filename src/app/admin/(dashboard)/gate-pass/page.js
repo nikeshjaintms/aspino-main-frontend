@@ -339,9 +339,9 @@ export default function GatePassPage() {
     // 4. Driver Contact Validation
     if (!driverContact.trim()) {
       errors.driverContact = "Driver Contact No is required.";
-    } else if (!/^[+0-9\s\-]{8,15}$/.test(driverContact.trim())) {
-      errors.driverContact = "Driver Contact must be a valid phone number (8-15 digits).";
-    }
+    } else if (!/^\d{10}$/.test(driverContact.trim())) {
+  errors.driverContact = "Please enter a valid 10-digit Mobile number.";
+}
 
     // 5. Transporter Name Validation
     if (!transporterName.trim()) {
@@ -1451,7 +1451,7 @@ export default function GatePassPage() {
                 <Button
                   type="submit"
                   disabled={passSubmitting}
-                  className="h-10 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-6 rounded-xl shadow-md"
+                  className="h-10 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white text-xs font-bold px-6 rounded-xl shadow-lg shadow-sky-600/20"
                 >
                   {passSubmitting ? "Issuing Gate Pass..." : "Issue Gate Pass"}
                 </Button>
@@ -1620,7 +1620,7 @@ export default function GatePassPage() {
                     Cancel Edit
                   </Button>
                 )}
-                <Button type="submit" disabled={catSubmitting} className="h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 rounded-xl shadow-xs">
+                <Button type="submit" disabled={catSubmitting} className="h-8 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white text-xs font-bold px-4 rounded-xl shadow-lg shadow-sky-600/20">
                   {catSubmitting ? "Saving..." : editingCatId ? "Update Category" : "Save Category"}
                 </Button>
               </div>

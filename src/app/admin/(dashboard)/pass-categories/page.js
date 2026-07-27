@@ -311,7 +311,7 @@ export default function PassCategoriesPage() {
             resetForm();
             setShowModal(true);
           }}
-          className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-lg shadow-purple-600/20 gap-2 h-11"
+          className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-lg shadow-sky-600/20 gap-2 h-11"
         >
           <Plus className="h-4 w-4" />
           Add Pass Category
@@ -620,7 +620,7 @@ export default function PassCategoriesPage() {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="h-10 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-6 rounded-xl shadow-md"
+                  className="h-10 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white text-xs font-bold px-6 rounded-xl shadow-lg shadow-sky-600/20"
                 >
                   {submitting ? "Saving..." : editingId ? "Update Category" : "Save Category"}
                 </Button>

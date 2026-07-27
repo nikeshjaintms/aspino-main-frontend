@@ -295,7 +295,7 @@ export default function BankMasterPage() {
         <Button
           size="sm"
           onClick={handleAddClick}
-          className="h-9 text-xs bg-sky-600 hover:bg-sky-700 text-white shadow-md font-bold rounded-xl gap-1.5"
+          className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Add Bank Institution
@@ -453,7 +453,7 @@ export default function BankMasterPage() {
               </Button>
               <Button
                 type="submit"
-                className="h-10 text-xs bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 rounded-xl shadow-md"
+                className="h-10 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold px-5 rounded-xl shadow-lg shadow-sky-600/20"
               >
                 {editingBank ? "Save Changes" : "Register Bank"}
               </Button>

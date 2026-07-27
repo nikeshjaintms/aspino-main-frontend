@@ -646,14 +646,14 @@ export default function SuppliersPage() {
         ]}
       >
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-9 text-xs rounded-xl font-bold gap-1.5 border-slate-200">
+          {/* <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-9 text-xs rounded-xl font-bold gap-1.5 border-slate-200">
             <Download className="h-4 w-4 text-slate-500" />
             Export CSV
-          </Button>
+          </Button> */}
           <Button
             size="sm"
             onClick={handleAddClick}
-            className="h-9 text-xs bg-sky-600 hover:bg-sky-700 text-white shadow-md font-bold rounded-xl gap-1.5"
+            className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
           >
             <Plus className="h-4 w-4" />
             Add Supplier
@@ -1175,7 +1175,7 @@ export default function SuppliersPage() {
               </Button>
               <Button
                 type="submit"
-                className="h-10 text-xs bg-sky-600 hover:bg-sky-700 text-white font-bold px-6 rounded-xl shadow-md"
+                className="h-10 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold px-6 rounded-xl shadow-lg shadow-sky-600/20"
               >
                 {editingSupplier ? "Save Changes" : "Register Supplier"}
               </Button>
