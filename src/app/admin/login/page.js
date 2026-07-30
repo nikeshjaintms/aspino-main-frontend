@@ -431,7 +431,7 @@ export default function AdminLoginPage() {
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <Checkbox
                     id="rememberMe"
                     checked={rememberMe}
@@ -444,15 +444,15 @@ export default function AdminLoginPage() {
                   >
                     Remember Me
                   </Label>
-                </div>
+                </div> */}
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setShowForgotModal(true)}
                   className="text-xs font-bold text-[#0284c7] hover:text-sky-700 hover:underline transition-all cursor-pointer"
                 >
                   Forgot Password?
-                </button>
+                </button> */}
               </div>
 
               {/* Submit Button */}
