@@ -82,16 +82,19 @@ export default function BankMasterPage() {
         queryParams.append("search", debouncedSearch.trim());
       }
       const res = await fetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
-      if (!res.ok) throw new Error("Failed to load bank listing");
+      if (!res.ok) {
+        setBanks([]);
+        return;
+      }
       const data = await res.json();
-      setBanks(data.data || []);
-      setTotalCount(data.total || 0);
-      setTotalActive(data.totalActive || 0);
-      setTotalInactive(data.totalInactive || 0);
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setBanks(list);
+      setTotalCount(data.total ?? list.length);
+      setTotalActive(data.totalActive ?? list.filter(b => b?.isActive).length);
+      setTotalInactive(data.totalInactive ?? list.filter(b => !b?.isActive).length);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
-      console.error(error);
-      customToast.error("Could not fetch bank list from server.");
+      console.error("Error fetching banks:", error);
     } finally {
       setLoading(false);
     }
@@ -109,16 +112,19 @@ export default function BankMasterPage() {
           queryParams.append("search", debouncedSearch.trim());
         }
         const res = await fetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
-        if (!res.ok) throw new Error("Failed to load bank listing");
+        if (!res.ok) {
+          setBanks([]);
+          return;
+        }
         const data = await res.json();
-        setBanks(data.data || []);
-        setTotalCount(data.total || 0);
-        setTotalActive(data.totalActive || 0);
-        setTotalInactive(data.totalInactive || 0);
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        setBanks(list);
+        setTotalCount(data.total ?? list.length);
+        setTotalActive(data.totalActive ?? list.filter(b => b?.isActive).length);
+        setTotalInactive(data.totalInactive ?? list.filter(b => !b?.isActive).length);
         setTotalPages(data.totalPages || 1);
       } catch (error) {
-        console.error(error);
-        customToast.error("Could not fetch bank list from server.");
+        console.error("Error loading banks:", error);
       } finally {
         setLoading(false);
       }

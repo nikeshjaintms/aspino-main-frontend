@@ -89,6 +89,17 @@ export default function UsersPage() {
     }
   }, [error, dispatch]);
 
+  useEffect(() => {
+    if (formDialogOpen && !editingUser) {
+      setName("");
+      setEmail("");
+      setPassword("");
+      setRole("USER");
+      setFormError("");
+      setFieldErrors({});
+    }
+  }, [formDialogOpen, editingUser]);
+
   const resetForm = () => {
     setName("");
     setEmail("");
@@ -324,7 +335,7 @@ export default function UsersPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5 bg-white dark:bg-slate-900">
+          <form onSubmit={handleSubmit} noValidate autoComplete="off" className="p-6 space-y-5 bg-white dark:bg-slate-900">
             {formError && (
               <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-semibold">
                 <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
@@ -338,6 +349,7 @@ export default function UsersPage() {
                 <Input
                   id="user-name"
                   value={name}
+                  autoComplete="off"
                   onChange={(e) => {
                     setName(e.target.value);
                     if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: null }));
@@ -356,6 +368,7 @@ export default function UsersPage() {
                   id="user-email"
                   type="email"
                   value={email}
+                  autoComplete="off"
                   onChange={(e) => {
                     setEmail(e.target.value);
                     if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: null }));
@@ -378,6 +391,7 @@ export default function UsersPage() {
                     id="user-password"
                     type="password"
                     value={password}
+                    autoComplete="new-password"
                     onChange={(e) => {
                       setPassword(e.target.value);
                       if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: null }));

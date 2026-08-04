@@ -135,12 +135,13 @@ export default function SuppliersPage() {
   const fetchBanks = async () => {
     try {
       const banksRes = await fetch(`${API_BASE_URL}/bank`);
-      if (!banksRes.ok) throw new Error("Failed to load bank Master listing");
+      if (!banksRes.ok) return;
       const banksData = await banksRes.json();
-      const activeBanks = (banksData || []).filter(b => b.isActive);
+      const list = Array.isArray(banksData) ? banksData : (Array.isArray(banksData?.data) ? banksData.data : []);
+      const activeBanks = list.filter(b => b?.isActive);
       setBanks(activeBanks);
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching banks:", error);
     }
   };
 
@@ -177,12 +178,13 @@ export default function SuppliersPage() {
     const loadBanks = async () => {
       try {
         const banksRes = await fetch(`${API_BASE_URL}/bank`);
-        if (!banksRes.ok) throw new Error("Failed to load bank Master listing");
+        if (!banksRes.ok) return;
         const banksData = await banksRes.json();
-        const activeBanks = (banksData || []).filter((b) => b.isActive);
+        const list = Array.isArray(banksData) ? banksData : (Array.isArray(banksData?.data) ? banksData.data : []);
+        const activeBanks = list.filter((b) => b?.isActive);
         setBanks(activeBanks);
       } catch (error) {
-        console.error(error);
+        console.error("Error loading banks:", error);
       }
     };
     loadBanks();
