@@ -52,11 +52,7 @@ const adminMenuItems = [
         href: "/admin/users",
         icon: Users,
       },
-      {
-        title: "Activity Logs",
-        href: "/admin/activity-logs",
-        icon: Activity,
-      },
+     
     ],
   },
   {
@@ -87,6 +83,11 @@ const adminMenuItems = [
         href: "/admin/gate-pass",
         icon: ClipboardList,
       },
+       {
+        title: "Activity Logs",
+        href: "/admin/activity-logs",
+        icon: Activity,
+      },
     ],
   },
  
@@ -111,6 +112,7 @@ const userMenuItems = [
         href: "/user/suppliers",
         icon: Truck,
       },
+      
     ],
   },
 ];
