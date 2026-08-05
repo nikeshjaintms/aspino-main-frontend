@@ -52,6 +52,11 @@ const adminMenuItems = [
         href: "/admin/users",
         icon: Users,
       },
+      {
+        title: "Activity Logs",
+        href: "/admin/activity-logs",
+        icon: Activity,
+      },
     ],
   },
   {
