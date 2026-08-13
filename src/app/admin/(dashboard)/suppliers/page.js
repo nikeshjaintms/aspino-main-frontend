@@ -410,7 +410,7 @@ export default function SuppliersPage() {
       email: email.trim(),
       approvedCategories: parsedCategories,
       approvalStatus,
-      bankId: bankId ? parseInt(bankId) : null,
+      bankId: bankId ? bankId : null,
       accountNumber: accountNumber.trim(),
       ifscCode: ifscCode.trim().toUpperCase(),
       accountName: accountName.trim(),
@@ -864,8 +864,14 @@ export default function SuppliersPage() {
                     <Input
                       id="contactPerson"
                       value={contactPerson}
+                      onKeyDown={(e) => {
+                        // Block digits — names must not contain numbers
+                        if (/[0-9]/.test(e.key)) e.preventDefault();
+                      }}
                       onChange={(e) => {
-                        setContactPerson(e.target.value);
+                        // Strip any digits that may arrive via paste
+                        const cleaned = e.target.value.replace(/[0-9]/g, "");
+                        setContactPerson(cleaned);
                         if (fieldErrors.contactPerson) setFieldErrors((prev) => ({ ...prev, contactPerson: null }));
                       }}
                       placeholder="e.g. Amit Patel"
@@ -917,11 +923,22 @@ export default function SuppliersPage() {
                     <Input
                       id="phone"
                       value={phone}
+                      maxLength={10}
+                      onKeyDown={(e) => {
+                        const isControl = e.ctrlKey || e.metaKey || [
+                          "Backspace", "Delete", "Tab", "Enter", "ArrowLeft",
+                          "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End",
+                        ].includes(e.key);
+                        if (!isControl && !/[0-9]/.test(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
-                        setPhone(e.target.value);
+                        const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        setPhone(cleaned);
                         if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: null }));
                       }}
-                      placeholder="e.g. +91 98765 43210"
+                      placeholder="e.g. 9876543210"
                       className={`text-xs h-10 pl-9 rounded-xl bg-slate-50 border-slate-200 ${
                         fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : "focus-visible:ring-sky-500"
                       }`}
@@ -1045,8 +1062,14 @@ export default function SuppliersPage() {
                   <Input
                     id="accountName"
                     value={accountName}
+                    onKeyDown={(e) => {
+                      // Block digits — account holder name must contain only letters
+                      if (/[0-9]/.test(e.key)) e.preventDefault();
+                    }}
                     onChange={(e) => {
-                      setAccountName(e.target.value);
+                      // Strip any digits that may arrive via paste
+                      const cleaned = e.target.value.replace(/[0-9]/g, "");
+                      setAccountName(cleaned);
                       if (fieldErrors.accountName) setFieldErrors((prev) => ({ ...prev, accountName: null }));
                     }}
                     placeholder="e.g. PharmaCorp Ltd"

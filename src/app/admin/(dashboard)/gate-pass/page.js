@@ -90,7 +90,7 @@ export default function GatePassPage() {
   const [passType, setPassType] = useState("INWARD");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
-  const selectedCatObj = categories.find((c) => c.id === Number(selectedCategoryId));
+  const selectedCatObj = categories.find((c) => c.id === selectedCategoryId);
   const isSales = selectedCatObj ? selectedCatObj.name.toLowerCase().includes("sales") : false;
 
   // Form Fields for Gate Pass
@@ -385,7 +385,7 @@ export default function GatePassPage() {
     const resultAction = await dispatch(
       createGatePass({
         type: passType,
-        categoryId: Number(selectedCategoryId),
+        categoryId: selectedCategoryId,
         vehicleNumber: vehicleNumber.trim().toUpperCase(),
         driverName: driverName.trim(),
         driverContact: driverContact.trim(),
@@ -1184,8 +1184,12 @@ export default function GatePassPage() {
                   <Input
                     placeholder="e.g. Rajesh Kumar"
                     value={driverName}
+                    onKeyDown={(e) => {
+                      if (/[0-9]/.test(e.key)) e.preventDefault();
+                    }}
                     onChange={(e) => {
-                      setDriverName(e.target.value);
+                      const cleaned = e.target.value.replace(/[0-9]/g, "");
+                      setDriverName(cleaned);
                       if (passFieldErrors.driverName) setPassFieldErrors((prev) => ({ ...prev, driverName: null }));
                     }}
                     className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
@@ -1206,10 +1210,21 @@ export default function GatePassPage() {
                 <div className="space-y-1">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Driver Contact No *</Label>
                   <Input
-                    placeholder="e.g. +91 98201 44512"
+                    placeholder="e.g. 9820144512"
                     value={driverContact}
+                    maxLength={10}
+                    onKeyDown={(e) => {
+                      const isControl = e.ctrlKey || e.metaKey || [
+                        "Backspace", "Delete", "Tab", "Enter", "ArrowLeft",
+                        "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End",
+                      ].includes(e.key);
+                      if (!isControl && !/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     onChange={(e) => {
-                      setDriverContact(e.target.value);
+                      const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setDriverContact(cleaned);
                       if (passFieldErrors.driverContact) setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
                     }}
                     className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
