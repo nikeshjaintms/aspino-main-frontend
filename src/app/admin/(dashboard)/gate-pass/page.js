@@ -855,7 +855,7 @@ export default function GatePassPage() {
     <Button
       variant="outline"
       size="icon"
-      onClick={() => dispatch(fetchGatePasses({ search: debouncedSearch, page: currentPage, limit, type: activeTab }))}
+      onClick={() => dispatch(fetchGatePasses({ search, page: currentPage, limit, type: activeTab }))}
       className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-805 hover:bg-slate-100 dark:hover:bg-slate-850"
       title="Refresh"
     >
@@ -1277,7 +1277,9 @@ export default function GatePassPage() {
   <Select
     value={supplierSource}
     onValueChange={(value) => {
-      setSupplierSource(value);
+      // value is "name||code" — store the display name as supplierSource
+      const [name] = value.split("||");
+      setSupplierSource(name);
 
       if (passFieldErrors.supplierSource) {
         setPassFieldErrors((prev) => ({
@@ -1306,7 +1308,7 @@ export default function GatePassPage() {
         suppliers.map((sup) => (
           <SelectItem
             key={sup.id}
-            value={String(sup.id)}
+            value={`${sup.name}||${sup.code}`}
             className="text-xs focus:bg-slate-100 dark:focus:bg-slate-800"
           >
             {sup.name} ({sup.code})
