@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -290,29 +290,44 @@ export default function UsersPage() {
         </Card>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={paginatedUsers}
-        loading={loading}
-        searchPlaceholder="Search users by name or email..."
-        emptyMessage="No users found"
-        emptyDescription="Create a new user by clicking Add User."
-        isServerSide={false}
-        totalCount={totalCount}
-        totalPages={totalPages}
-        currentPage={currentPage}
-        searchQuery={search}
-        pageSize={pageSize}
-        onPageChange={(page) => setCurrentPage(page)}
-        onLimitChange={(limit) => {
-          setPageSize(limit);
-          setCurrentPage(1);
-        }}
-        onSearchQueryChange={(q) => {
-          setSearch(q);
-          setCurrentPage(1);
-        }}
-      />
+      {/* Main DataTable in Card Container */}
+      <Card className="border-border/60 shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold text-foreground">
+              User Management Registry
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Filter, search, sort, and manage system users, roles, and administrative permissions
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 bg-transparent">
+          <DataTable
+            columns={columns}
+            data={paginatedUsers}
+            loading={loading}
+            searchPlaceholder="Search users by name or email..."
+            emptyMessage="No users found"
+            emptyDescription="Create a new user by clicking Add User."
+            isServerSide={false}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            searchQuery={search}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onLimitChange={(limit) => {
+              setPageSize(limit);
+              setCurrentPage(1);
+            }}
+            onSearchQueryChange={(q) => {
+              setSearch(q);
+              setCurrentPage(1);
+            }}
+          />
+        </CardContent>
+      </Card>
 
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
         <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl bg-white dark:bg-slate-900">

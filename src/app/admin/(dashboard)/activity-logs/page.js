@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
 import { customToast } from "@/components/custom-toast";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Activity,
   Search,
@@ -371,24 +373,22 @@ export default function ActivityLogsPage() {
             <Label htmlFor="filter-start" className="text-xs font-bold text-muted-foreground">
               Start Date
             </Label>
-            <Input
-              id="filter-start"
-              type="date"
+            <DatePicker
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="h-9 text-xs rounded-xl"
+              onChange={(val) => setStartDate(val)}
+              placeholder="Pick start date"
+              className="h-9"
             />
           </div>
           <div className="space-y-1">
             <Label htmlFor="filter-end" className="text-xs font-bold text-muted-foreground">
               End Date
             </Label>
-            <Input
-              id="filter-end"
-              type="date"
+            <DatePicker
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="h-9 text-xs rounded-xl"
+              onChange={(val) => setEndDate(val)}
+              placeholder="Pick end date"
+              className="h-9"
             />
           </div>
         </div>
@@ -411,24 +411,38 @@ export default function ActivityLogsPage() {
         </div>
       </form>
 
-      {/* Data Table */}
-      <DataTable
-        columns={columns}
-        data={logs}
-        loading={loading}
-        isServerSide
-        totalCount={meta.total}
-        totalPages={meta.totalPages}
-        currentPage={page}
-        pageSize={limit}
-        searchQuery={search}
-        onPageChange={(p) => setPage(p)}
-        onLimitChange={(l) => { setLimit(l); setPage(1); }}
-        onSearchQueryChange={(s) => { setSearch(s); setPage(1); }}
-        searchPlaceholder="Search audit trail by actor, action, path or IP..."
-        emptyMessage="No activity logs found"
-        emptyDescription="Try adjusting your search criteria or clear date filters."
-      />
+      {/* Main DataTable in Card Container */}
+      <Card className="border-border/60 shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold text-foreground">
+              Activity & Audit Trail Log
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Immutable historical record of all data operations, user access, and system activities
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 bg-transparent">
+          <DataTable
+            columns={columns}
+            data={logs}
+            loading={loading}
+            isServerSide
+            totalCount={meta.total}
+            totalPages={meta.totalPages}
+            currentPage={page}
+            pageSize={limit}
+            searchQuery={search}
+            onPageChange={(p) => setPage(p)}
+            onLimitChange={(l) => { setLimit(l); setPage(1); }}
+            onSearchQueryChange={(s) => { setSearch(s); setPage(1); }}
+            searchPlaceholder="Search audit trail by actor, action, path or IP..."
+            emptyMessage="No activity logs found"
+            emptyDescription="Try adjusting your search criteria or clear date filters."
+          />
+        </CardContent>
+      </Card>
 
       {/* Payload Details Dialog */}
       <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>

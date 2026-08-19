@@ -214,11 +214,21 @@ export function DataTable({
                   }`}
                   onClick={() => onRowClick?.(row)}
                 >
-                  {columns.map((col) => (
-                    <TableCell key={col.accessorKey || col.id} className="py-3.5">
-                      {col.cell ? col.cell(row) : row[col.accessorKey]}
-                    </TableCell>
-                  ))}
+                  {columns.map((col) => {
+                    const rowObj = {
+                      ...row,
+                      original: row,
+                      row: { original: row, ...row },
+                      getValue: () => row[col.accessorKey],
+                    };
+                    return (
+                      <TableCell key={col.accessorKey || col.id} className="py-3.5">
+                        {col.cell
+                          ? col.cell(rowObj, { row: { original: row, ...row }, getValue: () => row[col.accessorKey] })
+                          : row[col.accessorKey]}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             )}

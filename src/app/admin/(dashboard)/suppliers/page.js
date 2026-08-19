@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -52,8 +52,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
+import { generateSupplierCode } from "@/lib/code-generator";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 // Reusable Interactive Star Rating Component
 function StarRating({ value, onChange, disabled = false }) {
@@ -130,6 +131,24 @@ export default function SuppliersPage() {
   const [accountName, setAccountName] = useState("");
   const [rating, setRating] = useState(5);
   const [history, setHistory] = useState("");
+  const [isCodeManual, setIsCodeManual] = useState(false);
+
+  // Live supplier name change with real-time auto code generation
+  const handleNameChange = (val) => {
+    setName(val);
+    if (fieldErrors.name && val.trim().length >= 2) {
+      setFieldErrors((prev) => ({ ...prev, name: null }));
+    }
+    if (!isCodeManual) {
+      const derived = generateSupplierCode(val);
+      if (derived) {
+        setCode(derived);
+        if (fieldErrors.code) {
+          setFieldErrors((prev) => ({ ...prev, code: null }));
+        }
+      }
+    }
+  };
 
   // Fetch Banks from NestJS backend (for select dropdown)
   const fetchBanks = async () => {
@@ -247,9 +266,9 @@ export default function SuppliersPage() {
   const handleAddClick = () => {
     setEditingSupplier(null);
     resetForm();
-    // Auto generate code suggestion based on current count
-    const nextNum = suppliers.length + 1;
-    setCode(`SUP-2026-${String(nextNum).padStart(3, "0")}`);
+    setIsCodeManual(false);
+    setFieldErrors({});
+    setFormError("");
     setFormDialogOpen(true);
   };
 
@@ -270,6 +289,9 @@ export default function SuppliersPage() {
     setAccountName(supplier.accountName || "");
     setRating(Number(supplier.rating || 5));
     setHistory(supplier.history || "");
+    setIsCodeManual(true);
+    setFieldErrors({});
+    setFormError("");
     setFormDialogOpen(true);
   };
 
@@ -314,8 +336,8 @@ export default function SuppliersPage() {
     // 1. Supplier Code
     if (!code.trim()) {
       errors.code = "Supplier Code is required.";
-    } else if (code.trim().length < 2) {
-      errors.code = "Supplier Code must be at least 2 characters.";
+    } else if (!/^[A-Z0-9_-]{2,30}$/i.test(code.trim())) {
+      errors.code = "Code must be 2-30 alphanumeric characters.";
     }
 
     // 2. Supplier Name
@@ -330,30 +352,36 @@ export default function SuppliersPage() {
       errors.address = "Physical Address / Plant Location is required.";
     }
 
-    // 4. Contact Person
+    // 4. Contact Person (No numbers allowed)
     if (!contactPerson.trim()) {
       errors.contactPerson = "Contact Person Name is required.";
+    } else if (/[0-9]/.test(contactPerson.trim())) {
+      errors.contactPerson = "Numbers are not allowed in Contact Person name.";
+    } else if (!/^[a-zA-Z\s.'-]+$/.test(contactPerson.trim())) {
+      errors.contactPerson = "Only letters and spaces are allowed in Contact Person.";
     }
 
-    // 5. Email Address
+    // 5. Email Address (Proper regex)
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!email.trim()) {
       errors.email = "Email Address is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      errors.email = "Please enter a valid email address.";
+    } else if (!emailPattern.test(email.trim())) {
+      errors.email = "Please enter a valid email address (e.g. sales@vendor.com).";
     }
 
-    // 6. Phone Number
-    if (!phone.trim()) {
-      errors.phone = "Phone Number is required.";
-    } else if (!/^\d{10}$/.test(phone.trim())) {
-  errors.phone = "Please enter a valid 10-digit phone number.";
-}
+    // 6. Phone Number (10 digits only)
+    const cleanedPhone = phone.trim().replace(/\D/g, "");
+    if (!cleanedPhone) {
+      errors.phone = "10-digit mobile number is required.";
+    } else if (cleanedPhone.length !== 10) {
+      errors.phone = `Mobile number must be exactly 10 digits (currently ${cleanedPhone.length}).`;
+    }
 
     // 7. GST No
     if (!gstNo.trim()) {
       errors.gstNo = "GST / Tax Registration No. is required.";
-    } else if (gstNo.trim().length < 8) {
-      errors.gstNo = "Invalid GST Number format.";
+    } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(gstNo.trim())) {
+      errors.gstNo = "Invalid GSTIN format (e.g. 27AAAAA1111A1Z1).";
     }
 
     // 8. Approved Categories
@@ -366,9 +394,11 @@ export default function SuppliersPage() {
       errors.bankId = "Bank Institution selection is required.";
     }
 
-    // 10. Account Name
+    // 10. Account Name (No numbers)
     if (!accountName.trim()) {
       errors.accountName = "Account Holder Name is required.";
+    } else if (/[0-9]/.test(accountName.trim())) {
+      errors.accountName = "Numbers are not allowed in Account Holder Name.";
     }
 
     // 11. Account Number
@@ -390,8 +420,8 @@ export default function SuppliersPage() {
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      setFormError("All fields are required. Please fix the highlighted fields in red below.");
-      toast.error("All fields are required. Please check highlighted fields.");
+      setFormError("Please correct the highlighted fields in red below.");
+      toast.error("Please correct the errors before submitting.");
       return;
     }
 
@@ -722,496 +752,612 @@ export default function SuppliersPage() {
         </Card>
       </div>
 
-      {/* Main Datatable */}
-      <DataTable
-        columns={columns}
-        data={suppliers}
-        loading={loading}
-        searchPlaceholder="Search by Name, Code, Tax ID, Categories..."
-        emptyMessage="No supplier records found"
-        emptyDescription="Create a new supplier master entry by clicking Add Supplier."
-        isServerSide={true}
-        totalCount={totalVendors}
-        totalPages={totalPages}
-        currentPage={currentPage}
-        searchQuery={search}
-        pageSize={pageSize}
-        onPageChange={(page) => setCurrentPage(page)}
-        onLimitChange={(limit) => {
-          setPageSize(limit);
-          setCurrentPage(1);
-        }}
-        onSearchQueryChange={(q) => {
-          setSearch(q);
-          setCurrentPage(1);
-        }}
-      />
+      {/* Main DataTable in Card Container */}
+      <Card className="border-border/60 shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold text-foreground">
+              Supplier Master Registry
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Filter, search, sort, and manage qualified pharmaceutical vendor records and compliance details
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 bg-transparent">
+          <DataTable
+            columns={columns}
+            data={suppliers}
+            loading={loading}
+            searchPlaceholder="Search by Name, Code, Tax ID, Categories..."
+            emptyMessage="No supplier records found"
+            emptyDescription="Create a new supplier master entry by clicking Add Supplier."
+            isServerSide={true}
+            totalCount={totalVendors}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            searchQuery={search}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onLimitChange={(limit) => {
+              setPageSize(limit);
+              setCurrentPage(1);
+            }}
+            onSearchQueryChange={(q) => {
+              setSearch(q);
+              setCurrentPage(1);
+            }}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Dialog 1: Add / Edit Supplier Form */}
+      {/* Dialog 1: Add / Edit Supplier Form (WIDE 2-COLUMN LANDSCAPE LAYOUT) */}
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
-        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card">
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
-            <div className="absolute right-6 top-6 opacity-10">
-              <Building2 className="h-32 w-32" />
+        <DialogContent className="max-w-6xl xl:max-w-7xl w-[96vw] max-h-[92vh] p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card flex flex-col">
+          {/* Top Gradient Header Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 text-white relative shrink-0">
+            <div className="absolute right-8 top-3 opacity-10">
+              <Building2 className="h-28 w-28" />
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
-                <Sparkles className="h-6 w-6 text-sky-400" />
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner">
+                  <Sparkles className="h-6 w-6 text-sky-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg sm:text-xl font-black tracking-tight text-white">
+                    {editingSupplier ? `Modify Master Record: ${editingSupplier.name}` : "Register New Supplier Master"}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-slate-300">
+                    Configure supplier codes, billing credentials, compliance settings, and financial routing.
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-xl font-extrabold tracking-tight text-white">
-                  {editingSupplier ? `Modify Master Record: ${editingSupplier.name}` : "Register New Supplier Master"}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-300 mt-1">
-                  Configure supplier codes, billing credentials, compliance settings, and financial routing.
-                </DialogDescription>
+
+              <div className="hidden sm:flex items-center gap-2.5">
+                <span className={`text-xs font-bold px-3 py-1 rounded-xl backdrop-blur-md border ${
+                  approvalStatus === "Approved"
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    : "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                }`}>
+                  {approvalStatus === "Approved" ? "Status: Approved" : `Status: ${approvalStatus}`}
+                </span>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="p-6 space-y-6 max-h-[70vh] overflow-y-auto bg-card">
-            {formError && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2.5 text-rose-400 text-xs font-bold shadow-xs">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {/* Row 1: Profile & Categories */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
-                <Building2 className="h-4 w-4 text-sky-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">General Profile Settings</h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Code */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="code" className="text-xs font-bold text-foreground">Supplier Code *</Label>
-                  <Input
-                    id="code"
-                    value={code}
-                    onChange={(e) => {
-                      setCode(e.target.value);
-                      if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
-                    }}
-                    placeholder="e.g. SUP-2026-001"
-                    className={`text-xs h-10 rounded-xl bg-muted/50 font-mono font-bold ${
-                      fieldErrors.code ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.code && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.code}
-                    </p>
-                  )}
+          <form onSubmit={handleSubmit} noValidate autoComplete="off" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="p-5 sm:p-6 space-y-4 bg-card flex-1 overflow-y-auto">
+              {formError && (
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2 text-destructive text-xs font-semibold">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{formError}</span>
                 </div>
+              )}
 
-                {/* Name */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <Label htmlFor="name" className="text-xs font-bold text-foreground">Company Name *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: null }));
-                    }}
-                    placeholder="e.g. Reliance Chemical Industries Ltd"
-                    className={`text-xs h-10 rounded-xl bg-muted/50 ${
-                      fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.name && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.name}
-                    </p>
-                  )}
-                </div>
-              </div>
+              {/* 2-COLUMN WIDE LANDSCAPE GRID */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                {/* LEFT COLUMN: Corporate Profile, Location & Primary Contact */}
+                <div className="space-y-4">
+                  {/* Section 1: General Profile Settings */}
+                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3 shadow-sm">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                      <Building2 className="h-4 w-4 text-sky-600" />
+                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        1. General Corporate Profile & Location
+                      </h4>
+                    </div>
 
-              {/* Address */}
-              <div className="space-y-1.5">
-                <Label htmlFor="address" className="text-xs font-bold text-foreground">Physical Address / Plant Location *</Label>
-                <Input
-                  id="address"
-                  value={address}
-                  onChange={(e) => {
-                    setAddress(e.target.value);
-                    if (fieldErrors.address) setFieldErrors((prev) => ({ ...prev, address: null }));
-                  }}
-                  placeholder="Plot number, industrial estate, city, state, country - postal code"
-                  className={`text-xs h-10 rounded-xl bg-slate-50 border-slate-200 ${
-                    fieldErrors.address ? "border-red-500 focus-visible:ring-red-500" : "focus-visible:ring-sky-500"
-                  }`}
-                />
-                {fieldErrors.address && (
-                  <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3 shrink-0" />
-                    {fieldErrors.address}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Contact Person */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="contactPerson" className="text-xs font-bold text-foreground">Contact Person Name *</Label>
-                  <div className="relative">
-                    <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-                    <Input
-                      id="contactPerson"
-                      value={contactPerson}
-                      onKeyDown={(e) => {
-                        // Block digits — names must not contain numbers
-                        if (/[0-9]/.test(e.key)) e.preventDefault();
-                      }}
-                      onChange={(e) => {
-                        // Strip any digits that may arrive via paste
-                        const cleaned = e.target.value.replace(/[0-9]/g, "");
-                        setContactPerson(cleaned);
-                        if (fieldErrors.contactPerson) setFieldErrors((prev) => ({ ...prev, contactPerson: null }));
-                      }}
-                      placeholder="e.g. Amit Patel"
-                      className={`text-xs h-10 pl-9 rounded-xl bg-slate-50 border-slate-200 ${
-                        fieldErrors.contactPerson ? "border-red-500 focus-visible:ring-red-500" : "focus-visible:ring-sky-500"
-                      }`}
-                    />
-                  </div>
-                  {fieldErrors.contactPerson && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.contactPerson}
-                    </p>
-                  )}
-                </div>
-
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-bold text-foreground">Email Address *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: null }));
-                      }}
-                      placeholder="e.g. sales@vendor.com"
-                      className={`text-xs h-10 pl-9 rounded-xl bg-slate-50 border-slate-200 ${
-                        fieldErrors.email ? "border-red-500 focus-visible:ring-red-500" : "focus-visible:ring-sky-500"
-                      }`}
-                    />
-                  </div>
-                  {fieldErrors.email && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.email}
-                    </p>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-xs font-bold text-foreground">Phone Number *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-                    <Input
-                      id="phone"
-                      value={phone}
-                      maxLength={10}
-                      onKeyDown={(e) => {
-                        const isControl = e.ctrlKey || e.metaKey || [
-                          "Backspace", "Delete", "Tab", "Enter", "ArrowLeft",
-                          "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End",
-                        ].includes(e.key);
-                        if (!isControl && !/[0-9]/.test(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
-                        setPhone(cleaned);
-                        if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: null }));
-                      }}
-                      placeholder="e.g. 9876543210"
-                      className={`text-xs h-10 pl-9 rounded-xl bg-slate-50 border-slate-200 ${
-                        fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : "focus-visible:ring-sky-500"
-                      }`}
-                    />
-                  </div>
-                  {fieldErrors.phone && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.phone}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Row 2: Tax, Category & Status */}
-            <div className="space-y-4 pt-2 border-t border-border/40">
-              <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
-                <Globe className="h-4 w-4 text-sky-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Taxation & Classifications</h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* GST Number */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="gstNo" className="text-xs font-bold text-slate-700">GST/Tax Registration No. *</Label>
-                  <Input
-                    id="gstNo"
-                    value={gstNo}
-                    onChange={(e) => {
-                      setGstNo(e.target.value);
-                      if (fieldErrors.gstNo) setFieldErrors((prev) => ({ ...prev, gstNo: null }));
-                    }}
-                    placeholder="e.g. 27AAAAA1111A1Z1"
-                    className={`text-xs h-10 rounded-xl bg-muted/50 font-mono font-semibold ${
-                      fieldErrors.gstNo ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.gstNo && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.gstNo}
-                    </p>
-                  )}
-                </div>
-
-                {/* Approved Material Categories */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="approvedCategories" className="text-xs font-bold text-foreground">Approved Material Categories *</Label>
-                  <Input
-                    id="approvedCategories"
-                    value={approvedCategories}
-                    onChange={(e) => {
-                      setApprovedCategories(e.target.value);
-                      if (fieldErrors.approvedCategories) setFieldErrors((prev) => ({ ...prev, approvedCategories: null }));
-                    }}
-                    placeholder="Solvents, Acids, Packaging (comma separated)"
-                    className={`text-xs h-10 rounded-xl bg-muted/50 ${
-                      fieldErrors.approvedCategories ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.approvedCategories && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.approvedCategories}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Row 3: Financial Routing & Bank Dropdown */}
-            <div className="space-y-4 pt-2 border-t border-border/40">
-              <div className="flex items-center justify-between pb-1.5 border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-sky-600" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Bank Details & Financial Routing</h4>
-                </div>
-                <Link href="/admin/banks" target="_blank" className="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1">
-                  <Plus className="h-3 w-3" />
-                  Manage Bank Master
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Bank Name Dropdown */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="bankId" className="text-xs font-bold text-foreground">Bank Name *</Label>
-                  <Select value={bankId} onValueChange={(val) => {
-                    setBankId(val);
-                    if (fieldErrors.bankId) setFieldErrors((prev) => ({ ...prev, bankId: null }));
-                  }}>
-                    <SelectTrigger id="bankId" className={`h-10 text-xs rounded-xl bg-muted/50 ${
-                      fieldErrors.bankId ? "border-red-500 focus-visible:ring-red-500" : "border-border"
-                    }`}>
-                      <SelectValue placeholder="Select Corporate Bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.length === 0 ? (
-                        <div className="py-2 px-3 text-xs text-muted-foreground italic">No active banks in master.</div>
-                      ) : (
-                        banks.map((bank) => (
-                          <SelectItem key={bank.id} value={String(bank.id)}>
-                            {bank.name}
-                          </SelectItem>
-                        ))
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Supplier Code */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="code" className="text-xs sm:text-sm font-bold text-foreground">
+                          Supplier Code *
+                        </Label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (name) {
+                              const derived = generateSupplierCode(name);
+                              setCode(derived);
+                              setIsCodeManual(false);
+                              if (fieldErrors.code) {
+                                setFieldErrors((prev) => ({ ...prev, code: null }));
+                              }
+                            }
+                          }}
+                          className="text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+                          title="Auto-derive code from company name"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Auto-derive
+                        </button>
+                      </div>
+                      <Input
+                        id="code"
+                        value={code}
+                        onChange={(e) => {
+                          setCode(e.target.value.toUpperCase());
+                          setIsCodeManual(true);
+                          if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
+                        }}
+                        placeholder="e.g. SUP-REL"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 font-mono font-bold ${
+                          fieldErrors.code ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.code && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.code}
+                        </p>
                       )}
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.bankId && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.bankId}
-                    </p>
-                  )}
+                    </div>
+
+                    {/* Company Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-xs sm:text-sm font-bold text-foreground">
+                        Company Name *
+                      </Label>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => handleNameChange(e.target.value)}
+                        placeholder="e.g. Reliance Chemical Industries Ltd"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 ${
+                          fieldErrors.name ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.name && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Physical Address / Plant Location */}
+                  <div className="space-y-2">
+                    <Label htmlFor="address" className="text-xs sm:text-sm font-bold text-foreground">
+                      Physical Address / Plant Location *
+                    </Label>
+                    <Textarea
+                      id="address"
+                      rows={2}
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        if (fieldErrors.address) setFieldErrors((prev) => ({ ...prev, address: null }));
+                      }}
+                      placeholder="Plot number, industrial estate, city, state, country - postal code"
+                      className={`text-xs sm:text-sm rounded-xl bg-muted/50 min-h-[80px] ${
+                        fieldErrors.address ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                      }`}
+                    />
+                    {fieldErrors.address && (
+                      <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        {fieldErrors.address}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Account Name */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="accountName" className="text-xs font-bold text-foreground">Account Holder Name *</Label>
-                  <Input
-                    id="accountName"
-                    value={accountName}
-                    onKeyDown={(e) => {
-                      // Block digits — account holder name must contain only letters
-                      if (/[0-9]/.test(e.key)) e.preventDefault();
-                    }}
-                    onChange={(e) => {
-                      // Strip any digits that may arrive via paste
-                      const cleaned = e.target.value.replace(/[0-9]/g, "");
-                      setAccountName(cleaned);
-                      if (fieldErrors.accountName) setFieldErrors((prev) => ({ ...prev, accountName: null }));
-                    }}
-                    placeholder="e.g. PharmaCorp Ltd"
-                    className={`text-xs h-10 rounded-xl bg-muted/50 ${
-                      fieldErrors.accountName ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.accountName && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.accountName}
-                    </p>
-                  )}
+                {/* Section 2: Primary Contact & Communications */}
+                <div className="border rounded-2xl p-5 bg-muted/20 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+                    <Mail className="h-4.5 w-4.5 text-sky-600" />
+                    <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                      2. Primary Contact & Communications
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Contact Person */}
+                    <div className="space-y-2">
+                      <Label htmlFor="contactPerson" className="text-xs sm:text-sm font-bold text-foreground whitespace-nowrap">
+                        Contact Person *
+                      </Label>
+                      <div className="relative">
+                        <UserCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                        <Input
+                          id="contactPerson"
+                          value={contactPerson}
+                          onKeyDown={(e) => {
+                            if (/[0-9]/.test(e.key)) e.preventDefault();
+                          }}
+                          onChange={(e) => {
+                            const cleaned = e.target.value.replace(/[0-9]/g, "");
+                            setContactPerson(cleaned);
+                            if (fieldErrors.contactPerson && cleaned.trim()) {
+                              setFieldErrors((prev) => ({ ...prev, contactPerson: null }));
+                            }
+                          }}
+                          placeholder="e.g. Amit Patel"
+                          className={`text-xs sm:text-sm h-11 pl-10 rounded-xl bg-muted/50 ${
+                            fieldErrors.contactPerson ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        />
+                      </div>
+                      {fieldErrors.contactPerson && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.contactPerson}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-xs sm:text-sm font-bold text-foreground whitespace-nowrap">
+                        Email Address *
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                        <Input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEmail(val);
+                            if (fieldErrors.email) {
+                              if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val.trim())) {
+                                setFieldErrors((prev) => ({ ...prev, email: null }));
+                              }
+                            }
+                          }}
+                          placeholder="e.g. sales@vendor.com"
+                          className={`text-xs sm:text-sm h-11 pl-10 rounded-xl bg-muted/50 ${
+                            fieldErrors.email ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        />
+                      </div>
+                      {fieldErrors.email && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-xs sm:text-sm font-bold text-foreground whitespace-nowrap">
+                        Mobile *
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+                        <Input
+                          id="phone"
+                          value={phone}
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          onKeyDown={(e) => {
+                            if (
+                              ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+                              e.ctrlKey ||
+                              e.metaKey
+                            ) {
+                              return;
+                            }
+                            if (!/^[0-9]$/.test(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                            setPhone(cleaned);
+                            if (fieldErrors.phone) {
+                              if (cleaned.length === 10) {
+                                setFieldErrors((prev) => ({ ...prev, phone: null }));
+                              }
+                            }
+                          }}
+                          placeholder="e.g. 9876543210"
+                          className={`text-xs sm:text-sm h-11 pl-10 rounded-xl bg-muted/50 ${
+                            fieldErrors.phone ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        />
+                      </div>
+                      {fieldErrors.phone && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Taxation, Banking, Rating & Approval */}
+              <div className="space-y-5">
+                {/* Section 3: Taxation & Classifications */}
+                <div className="border rounded-2xl p-5 bg-muted/20 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+                    <Globe className="h-4.5 w-4.5 text-sky-600" />
+                    <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                      3. Taxation & Material Classifications
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* GST Number */}
+                    <div className="space-y-2">
+                      <Label htmlFor="gstNo" className="text-xs sm:text-sm font-bold text-foreground">
+                        GST/Tax Registration No. *
+                      </Label>
+                      <Input
+                        id="gstNo"
+                        value={gstNo}
+                        onChange={(e) => {
+                          setGstNo(e.target.value.toUpperCase());
+                          if (fieldErrors.gstNo) setFieldErrors((prev) => ({ ...prev, gstNo: null }));
+                        }}
+                        placeholder="e.g. 27AAAAA1111A1Z1"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 font-mono font-semibold ${
+                          fieldErrors.gstNo ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.gstNo && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.gstNo}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Approved Material Categories */}
+                    <div className="space-y-2">
+                      <Label htmlFor="approvedCategories" className="text-xs sm:text-sm font-bold text-foreground">
+                        Approved Material Categories *
+                      </Label>
+                      <Input
+                        id="approvedCategories"
+                        value={approvedCategories}
+                        onChange={(e) => {
+                          setApprovedCategories(e.target.value);
+                          if (fieldErrors.approvedCategories) setFieldErrors((prev) => ({ ...prev, approvedCategories: null }));
+                        }}
+                        placeholder="Solvents, Acids, Packaging"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 ${
+                          fieldErrors.approvedCategories ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.approvedCategories && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.approvedCategories}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Account Number */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="accountNumber" className="text-xs font-bold text-foreground">Account Number *</Label>
-                  <Input
-                    id="accountNumber"
-                    value={accountNumber}
-                    onChange={(e) => {
-                      setAccountNumber(e.target.value);
-                      if (fieldErrors.accountNumber) setFieldErrors((prev) => ({ ...prev, accountNumber: null }));
-                    }}
-                    placeholder="e.g. 50100223344"
-                    className={`text-xs h-10 rounded-xl bg-slate-50 font-mono ${
-                      fieldErrors.accountNumber ? "border-red-500 focus-visible:ring-red-500" : "border-slate-200 focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.accountNumber && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.accountNumber}
-                    </p>
-                  )}
+                {/* Section 4: Bank Details & Financial Routing */}
+                <div className="border rounded-2xl p-5 bg-muted/20 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4.5 w-4.5 text-sky-600" />
+                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        4. Bank Details & Financial Routing
+                      </h4>
+                    </div>
+                    <Link href="/admin/banks" target="_blank" className="text-xs font-bold text-sky-600 hover:text-sky-800 flex items-center gap-1">
+                      <Plus className="h-3.5 w-3.5" />
+                      Manage Bank Master
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Bank Name Dropdown */}
+                    <div className="space-y-2">
+                      <Label htmlFor="bankId" className="text-xs sm:text-sm font-bold text-foreground">
+                        Bank Name *
+                      </Label>
+                      <Select value={bankId} onValueChange={(val) => {
+                        setBankId(val);
+                        if (fieldErrors.bankId) setFieldErrors((prev) => ({ ...prev, bankId: null }));
+                      }}>
+                        <SelectTrigger id="bankId" className={`h-11 text-xs sm:text-sm rounded-xl bg-muted/50 ${
+                          fieldErrors.bankId ? "border-red-500 focus-visible:ring-red-500" : "border-border"
+                        }`}>
+                          <SelectValue placeholder="Select Corporate Bank" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-56">
+                          {banks.length === 0 ? (
+                            <div className="py-2 px-3 text-xs text-muted-foreground italic">No active banks in master.</div>
+                          ) : (
+                            banks.map((bank) => (
+                              <SelectItem key={bank.id} value={String(bank.id)} className="text-xs sm:text-sm">
+                                {bank.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {fieldErrors.bankId && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.bankId}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Account Holder Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="accountName" className="text-xs sm:text-sm font-bold text-foreground">
+                        Account Holder Name *
+                      </Label>
+                      <Input
+                        id="accountName"
+                        value={accountName}
+                        onKeyDown={(e) => {
+                          if (/[0-9]/.test(e.key)) e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/[0-9]/g, "");
+                          setAccountName(cleaned);
+                          if (fieldErrors.accountName) setFieldErrors((prev) => ({ ...prev, accountName: null }));
+                        }}
+                        placeholder="e.g. PharmaCorp Ltd"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 ${
+                          fieldErrors.accountName ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.accountName && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.accountName}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Account Number */}
+                    <div className="space-y-2">
+                      <Label htmlFor="accountNumber" className="text-xs sm:text-sm font-bold text-foreground">
+                        Account Number *
+                      </Label>
+                      <Input
+                        id="accountNumber"
+                        value={accountNumber}
+                        onChange={(e) => {
+                          setAccountNumber(e.target.value);
+                          if (fieldErrors.accountNumber) setFieldErrors((prev) => ({ ...prev, accountNumber: null }));
+                        }}
+                        placeholder="e.g. 50100223344"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 font-mono ${
+                          fieldErrors.accountNumber ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.accountNumber && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.accountNumber}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* IFSC Code */}
+                    <div className="space-y-2">
+                      <Label htmlFor="ifscCode" className="text-xs sm:text-sm font-bold text-foreground">
+                        IFSC Code *
+                      </Label>
+                      <Input
+                        id="ifscCode"
+                        value={ifscCode}
+                        onChange={(e) => {
+                          setIfscCode(e.target.value.toUpperCase());
+                          if (fieldErrors.ifscCode) setFieldErrors((prev) => ({ ...prev, ifscCode: null }));
+                        }}
+                        placeholder="e.g. HDFC0000123"
+                        className={`text-xs sm:text-sm h-11 rounded-xl bg-muted/50 font-mono ${
+                          fieldErrors.ifscCode ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.ifscCode && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.ifscCode}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* IFSC Code */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="ifscCode" className="text-xs font-bold text-foreground">IFSC Code *</Label>
-                  <Input
-                    id="ifscCode"
-                    value={ifscCode}
-                    onChange={(e) => {
-                      setIfscCode(e.target.value);
-                      if (fieldErrors.ifscCode) setFieldErrors((prev) => ({ ...prev, ifscCode: null }));
-                    }}
-                    placeholder="e.g. HDFC0000123"
-                    className={`text-xs h-10 rounded-xl bg-slate-50 font-mono ${
-                      fieldErrors.ifscCode ? "border-red-500 focus-visible:ring-red-500" : "border-slate-200 focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.ifscCode && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.ifscCode}
-                    </p>
-                  )}
+                {/* Section 5: Quality Performance, Audit History & Active Status */}
+                <div className="border rounded-2xl p-5 bg-muted/20 space-y-4 shadow-sm">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+                    <HistoryIcon className="h-4.5 w-4.5 text-sky-600" />
+                    <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                      5. Quality Performance, Audit Remarks & Status
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+                    {/* Star Rating */}
+                    <div className="space-y-2">
+                      <Label className="text-xs sm:text-sm font-bold text-foreground">
+                        Quality Rating Score
+                      </Label>
+                      <StarRating value={rating} onChange={setRating} />
+                    </div>
+
+                    {/* Audit History / Remarks */}
+                    <div className="sm:col-span-2 space-y-2">
+                      <Label htmlFor="history" className="text-xs sm:text-sm font-bold text-foreground">
+                        Audit History / Remarks *
+                      </Label>
+                      <Textarea
+                        id="history"
+                        rows={2}
+                        value={history}
+                        onChange={(e) => {
+                          setHistory(e.target.value);
+                          if (fieldErrors.history) setFieldErrors((prev) => ({ ...prev, history: null }));
+                        }}
+                        placeholder="Delivery promptness, raw material quality, audit remarks..."
+                        className={`text-xs sm:text-sm rounded-xl bg-muted/50 min-h-[60px] ${
+                          fieldErrors.history ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {fieldErrors.history && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {fieldErrors.history}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Active Status Switch */}
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-background/80 border border-border/50 mt-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="supplier-status-switch" className="text-xs sm:text-sm font-bold text-foreground cursor-pointer">
+                        Supplier Active / Approval Status
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {approvalStatus === "Approved" ? "Approved & Active (Usable in passes)" : "Suspended / Inactive"}
+                      </p>
+                    </div>
+                    <Switch
+                      id="supplier-status-switch"
+                      checked={approvalStatus === "Approved"}
+                      onCheckedChange={(checked) => setApprovalStatus(checked ? "Approved" : "Suspended")}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Row 4: Quality Performance Rating & History */}
-            <div className="space-y-4 pt-2 border-t border-border/40">
-              <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
-                <HistoryIcon className="h-4 w-4 text-sky-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Quality Performance & Rating</h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                {/* Custom Star Rating Component */}
-                <div className="sm:col-span-1 space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-700">Quality Rating Score</Label>
-                  <StarRating value={rating} onChange={setRating} />
-                </div>
-
-                {/* Audit log / History */}
-                <div className="sm:col-span-3 space-y-1.5">
-                  <Label htmlFor="history" className="text-xs font-bold text-foreground">Audit History / Performance Remarks *</Label>
-                  <Textarea
-                    id="history"
-                    rows={2}
-                    value={history}
-                    onChange={(e) => {
-                      setHistory(e.target.value);
-                      if (fieldErrors.history) setFieldErrors((prev) => ({ ...prev, history: null }));
-                    }}
-                    placeholder="Provide details on delivery promptness, raw material quality, audit remarks, etc."
-                    className={`text-xs rounded-xl bg-muted/50 ${
-                      fieldErrors.history ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {fieldErrors.history && (
-                    <p className="text-red-500 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {fieldErrors.history}
-                    </p>
-                  )}
-                </div>
-                </div>
-              </div>
-            {/* </div> */}
-
-            {/* Active Status Switch at the bottom */}
-            <div className="pt-4 border-t border-border/40">
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/40 border border-border/40">
-                <div className="space-y-0.5">
-                  <Label htmlFor="supplier-status-switch" className="text-xs font-bold text-foreground">Active Status</Label>
-                  <p className="text-[10px] text-muted-foreground">Allow this supplier to be active in ERP procurement workflows</p>
-                </div>
-                <Switch
-                  id="supplier-status-switch"
-                  checked={approvalStatus === "Approved"}
-                  onCheckedChange={(checked) => setApprovalStatus(checked ? "Approved" : "Suspended")}
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-4 border-t border-border/40 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setFormDialogOpen(false)}
-                className="h-10 text-xs font-bold rounded-xl"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="h-10 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold px-6 rounded-xl shadow-lg shadow-sky-600/20"
-              >
-                {editingSupplier ? "Save Changes" : "Register Supplier"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          <div className="px-6 py-3.5 border-t border-border/40 bg-muted/20 shrink-0 flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setFormDialogOpen(false)}
+              className="h-10 text-xs sm:text-sm font-bold rounded-xl px-5"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="h-10 text-xs sm:text-sm bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold px-7 rounded-xl shadow-lg shadow-sky-600/20"
+            >
+              {editingSupplier ? "Save Changes" : "Register Supplier"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
 
       {/* Dialog 2: View Detailed Supplier Profile */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="lg:max-w-3xl p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card">
+        <DialogContent className="max-w-5xl xl:max-w-6xl w-[96vw] p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card">
           {selectedSupplier && (
             <div>
               {/* Header block */}
@@ -1380,24 +1526,20 @@ export default function SuppliersPage() {
                   </div>
                 )}
 
-                {/* Audit & Rating */}
+                {/* Tab 4: History & Rating */}
                 {activeDetailTab === "history" && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between bg-muted/40 p-3.5 rounded-2xl border border-border/40 font-bold">
+                    <div className="border rounded-2xl p-4 bg-muted/20 flex items-center justify-between">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-semibold">Quality Audit Score</div>
-                        <div className="text-slate-500 mt-0.5 font-medium">Complies with safety standards</div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Quality Performance Score</div>
+                        <div className="text-lg font-bold text-foreground mt-0.5">{selectedSupplier.rating} / 5.0 Rating</div>
                       </div>
-                      <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-                        <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                        <span className="font-extrabold text-sm text-amber-400">{selectedSupplier.rating?.toFixed(1)} / 5.0</span>
-                      </div>
+                      <StarRating value={selectedSupplier.rating} disabled={true} />
                     </div>
 
                     <div className="border-t border-border/40 pt-3">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks & Notes</div>
-                      <StarRating value={selectedSupplier.rating} disabled={true} />
-                      <div className="mt-2.5 p-3 rounded-xl bg-muted/40 border border-border/40 font-medium text-muted-foreground leading-relaxed italic">
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Remarks & Notes</div>
+                      <div className="mt-2.5 p-3 rounded-xl bg-muted/40 border border-border/40 font-medium text-muted-foreground leading-relaxed italic text-xs sm:text-sm">
                         &quot;{selectedSupplier.history || "No audit log or historical remarks available for this vendor."}&quot;
                       </div>
                     </div>
@@ -1405,11 +1547,11 @@ export default function SuppliersPage() {
                 )}
               </div>
 
-              <DialogFooter className="p-4 border-t border-border/50 bg-muted/20">
+              <DialogFooter className="px-6 py-3.5 border-t border-border/40 bg-muted/10 shrink-0 flex flex-row items-center justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setViewDialogOpen(false)}
-                  className="h-10 text-xs font-bold w-full rounded-xl"
+                  className="h-10 text-xs sm:text-sm font-bold rounded-xl px-6"
                 >
                   Close Profile
                 </Button>

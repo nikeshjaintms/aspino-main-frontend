@@ -31,6 +31,13 @@ import {
   ClipboardList,
   Activity,
   Tags,
+  FolderTree,
+  Layers,
+  Boxes,
+  Scale,
+  Handshake,
+  ClipboardCheck,
+  Warehouse,
 } from "lucide-react";
 
 const adminMenuItems = [
@@ -59,6 +66,41 @@ const adminMenuItems = [
     group: "Masters",
     items: [
       {
+        title: "Product Categories",
+        href: "/admin/product-categories",
+        icon: FolderTree,
+      },
+      {
+        title: "Product Sub-Categories",
+        href: "/admin/product-sub-categories",
+        icon: Layers,
+      },
+      {
+        title: "UOM Master",
+        href: "/admin/uoms",
+        icon: Scale,
+      },
+      {
+        title: "Product Master",
+        href: "/admin/products",
+        icon: Package,
+      },
+      {
+        title: "Packing Materials",
+        href: "/admin/packing-materials",
+        icon: Boxes,
+      },
+      {
+        title: "QC Specifications",
+        href: "/admin/qc-specifications",
+        icon: ClipboardCheck,
+      },
+      {
+        title: "Storage Locations",
+        href: "/admin/storage-locations",
+        icon: Warehouse,
+      },
+      {
         title: "Pass Categories",
         href: "/admin/pass-categories",
         icon: Tags,
@@ -67,6 +109,16 @@ const adminMenuItems = [
         title: "Bank Master",
         href: "/admin/banks",
         icon: Building2,
+      },
+      {
+        title: "Vendor",
+        href: "/admin/vendors",
+        icon: Handshake,
+      },
+      {
+        title: "Customer Master",
+        href: "/admin/customers",
+        icon: Users,
       },
     ],
   },

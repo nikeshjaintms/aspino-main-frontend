@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -354,29 +354,44 @@ export default function BankMasterPage() {
         </Card>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={banks}
-        loading={loading}
-        searchPlaceholder="Search banks by name..."
-        emptyMessage="No bank master records found"
-        emptyDescription="Create a new bank clearing catalog record by clicking Add Bank Institution."
-        isServerSide={true}
-        totalCount={totalCount}
-        totalPages={totalPages}
-        currentPage={currentPage}
-        searchQuery={search}
-        pageSize={pageSize}
-        onPageChange={(page) => setCurrentPage(page)}
-        onLimitChange={(limit) => {
-          setPageSize(limit);
-          setCurrentPage(1);
-        }}
-        onSearchQueryChange={(q) => {
-          setSearch(q);
-          setCurrentPage(1);
-        }}
-      />
+      {/* Main DataTable in Card Container */}
+      <Card className="border-border/60 shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-bold text-foreground">
+              Bank Institution Master Registry
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Filter, search, sort, and manage approved banking institutions for supplier payments and settlements
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 bg-transparent">
+          <DataTable
+            columns={columns}
+            data={banks}
+            loading={loading}
+            searchPlaceholder="Search banks by name..."
+            emptyMessage="No bank master records found"
+            emptyDescription="Create a new bank clearing catalog record by clicking Add Bank Institution."
+            isServerSide={true}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            searchQuery={search}
+            pageSize={pageSize}
+            onPageChange={(page) => setCurrentPage(page)}
+            onLimitChange={(limit) => {
+              setPageSize(limit);
+              setCurrentPage(1);
+            }}
+            onSearchQueryChange={(q) => {
+              setSearch(q);
+              setCurrentPage(1);
+            }}
+          />
+        </CardContent>
+      </Card>
 
       {/* Add / Edit Bank Modal */}
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>

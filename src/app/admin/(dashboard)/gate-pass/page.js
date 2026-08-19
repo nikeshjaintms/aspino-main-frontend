@@ -21,10 +21,19 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { SelectContent ,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,9 +46,11 @@ import {
   Search,
   Plus,
   Clock,
+  Calendar,
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
+  UserCheck,
   LogOut,
   RefreshCw,
   Tags,
@@ -975,555 +986,701 @@ export default function GatePassPage() {
             </div>
           </Tabs>
         </CardContent>
-      </Card>
-
-      {/* Modal 1: Issue Gate Pass (ALL FIELDS MANDATORY) */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-5xl w-full p-6 shadow-2xl space-y-5 border border-slate-200 dark:border-slate-800 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-xl flex items-center gap-4">
-                  <ShieldCheck className="h-6 w-6 text-sky-600 dark:text-sky-450" />
-                  Issue Digital Gate Pass
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Record vehicle entry/exit using pass categories</p>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowModal(false)}
-                className="h-8 w-8 rounded-full text-slate-400 dark:text-slate-550 hover:text-slate-600 dark:hover:text-slate-350"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+      </Card>      {/* Modal 1: Issue Gate Pass (PERFECT FULL SCREEN VIEW 2-COLUMN LANDSCAPE) */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-6xl xl:max-w-7xl w-[96vw] max-h-[94vh] p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card flex flex-col">
+          {/* Top Gradient Header Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-6 py-4 text-white relative shrink-0">
+            <div className="absolute right-8 top-3 opacity-10">
+              <Truck className="h-28 w-28" />
             </div>
-
-            {/* Red Alert Banner */}
-            {formError && (
-              <div className="p-3.5 rounded-xl bg-red-100 dark:bg-red-950/20 border border-red-300 dark:border-red-900/50 flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-bold shadow-xs">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {formSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/50 flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-bold shadow-xs">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{formSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreatePass} noValidate className="space-y-4">
-              {/* Type Selection */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-          type="button"
-          onClick={() => {
-            setPassType("INWARD");
-            const firstInward = categories.find(
-              (c) => c.type === "INWARD" && (c.isActive ?? true)
-            );
-            setSelectedCategoryId(firstInward ? String(firstInward.id) : "");
-          }}
-          className={`p-3 rounded-2xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition-all ${
-            passType === "INWARD"
-              ? "border-sky-600 dark:border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/20"
-              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-          }`}
-        >
-          <ArrowDownLeft className="h-4 w-4" />
-          9.1 Inward Gate Pass
-        </button>
-
-               <button
-  type="button"
-  onClick={() => {
-    setPassType("OUTWARD");
-    const firstOutward = categories.find(
-      (c) => c.type === "OUTWARD" && (c.isActive ?? true)
-    );
-    setSelectedCategoryId(firstOutward ? String(firstOutward.id) : "");
-  }}
-  className={`p-3 rounded-2xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition-all ${
-    passType === "OUTWARD"
-      ? "border-emerald-600 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
-      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-  }`}
->
-  <ArrowUpRight className="h-4 w-4" />
-  9.2 Outward Gate Pass
-</button>
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-inner">
+                  <ShieldCheck className="h-6 w-6 text-sky-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                    Issue Digital Gate Pass
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-slate-300">
+                    Record vehicle movement, verify compliance documents & track plant entry/exit.
+                  </DialogDescription>
+                </div>
               </div>
 
-              {/*  Pass Category Dropdown */}
-            <div className="space-y-1">
-  <div className="flex items-center justify-between">
-    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-      Pass Category *
-    </Label>
-  </div>
-
-  <Select
-    value={selectedCategoryId}
-    onValueChange={(value) => {
-      setSelectedCategoryId(value);
-
-      if (passFieldErrors.category) {
-        setPassFieldErrors((prev) => ({
-          ...prev,
-          category: null,
-        }));
-      }
-    }}
-  >
-    <SelectTrigger
-      className={`h-10 rounded-xl text-xs font-semibold
-      ${
-        passFieldErrors.category
-          ? "border-red-500 focus:ring-red-500"
-          : "border-slate-200 dark:border-slate-700"
-      }`}
-    >
-      <SelectValue
-        placeholder={
-          availableCategoriesForType.length === 0
-            ? `No categories defined for ${passType}`
-            : "Select Pass Category"
-        }
-      />
-    </SelectTrigger>
-
-    <SelectContent>
-      {availableCategoriesForType.length === 0 ? (
-        <SelectItem value="no-category" disabled>
-          No categories defined for {passType}
-        </SelectItem>
-      ) : (
-        availableCategoriesForType.map((cat) => (
-          <SelectItem key={cat.id} value={String(cat.id)}>
-            {cat.name} ({cat.code})
-          </SelectItem>
-        ))
-      )}
-    </SelectContent>
-  </Select>
-
-  {passFieldErrors.category && (
-    <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400">
-      <AlertCircle className="h-3 w-3 shrink-0" />
-      {passFieldErrors.category}
-    </p>
-  )}
+              <div className="hidden sm:flex items-center gap-2.5">
+                <span className={`text-xs font-bold px-3 py-1 rounded-xl backdrop-blur-md border flex items-center gap-1.5 ${
+                  passType === "INWARD"
+                    ? "bg-sky-500/20 text-sky-300 border-sky-500/30"
+                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                }`}>
+                  {passType === "INWARD" ? (
+                    <>
+                      <ArrowDownLeft className="h-3.5 w-3.5" />
+                      9.1 INWARD MOVEMENT
+                    </>
+                  ) : (
+                    <>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                      9.2 OUTWARD MOVEMENT
+                    </>
+                  )}
+                </span>
+              </div>
             </div>
+          </div>
 
-              {/* Vehicle & Driver Details */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Vehicle Number & Photo Upload */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Vehicle Number *</Label>
-                  <div className="relative">
-                    <Input
-                      placeholder="e.g. MH-04-JK-8842"
-                      value={vehicleNumber}
-                      onChange={(e) => {
-                        setVehicleNumber(e.target.value);
-                        if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
-                      }}
-                      className={`h-10 pr-32 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                        passFieldErrors.vehicleNumber
-                          ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                          : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                      }`}
-                    />
-                    <div className="absolute right-1.5 top-1.5 flex items-center gap-1.5">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-7 bg-sky-600 hover:bg-sky-700 text-white text-[10px] font-bold rounded-lg px-2.5 gap-1.5 shadow-xs transition-all"
-                      >
-                        <Upload className="h-3 w-3" />
-                        {imageUrl ? "Change Photo" : "Upload Photo"}
-                      </Button>
-                    </div>
-                  </div>
-                  {passFieldErrors.vehicleNumber && (
-                    <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {passFieldErrors.vehicleNumber}
-                    </p>
-                  )}
-                  {imageUrl && (
-                    <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 w-fit">
-                      <Image src={imageUrl} alt="Gate Pass Photo" width={48} height={48} className="h-12 w-12 object-cover rounded-lg border border-slate-200 dark:border-slate-800 shadow-xs" />
-                      <div className="text-[11px]">
-                        <p className="font-bold text-slate-700 dark:text-slate-300">Photo Attached</p>
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="text-red-600 hover:text-red-700 text-[10px] font-bold flex items-center gap-1 mt-0.5"
-                        >
-                          <Trash2 className="h-3 w-3" /> Remove Photo
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Driver Name */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Driver Name *</Label>
-                  <Input
-                    placeholder="e.g. Rajesh Kumar"
-                    value={driverName}
-                    onKeyDown={(e) => {
-                      if (/[0-9]/.test(e.key)) e.preventDefault();
-                    }}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/[0-9]/g, "");
-                      setDriverName(cleaned);
-                      if (passFieldErrors.driverName) setPassFieldErrors((prev) => ({ ...prev, driverName: null }));
-                    }}
-                    className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                      passFieldErrors.driverName
-                        ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                        : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {passFieldErrors.driverName && (
-                    <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {passFieldErrors.driverName}
-                    </p>
-                  )}
-                </div>
-
-                {/* Driver Contact */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Driver Contact No *</Label>
-                  <Input
-                    placeholder="e.g. 9820144512"
-                    value={driverContact}
-                    maxLength={10}
-                    onKeyDown={(e) => {
-                      const isControl = e.ctrlKey || e.metaKey || [
-                        "Backspace", "Delete", "Tab", "Enter", "ArrowLeft",
-                        "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End",
-                      ].includes(e.key);
-                      if (!isControl && !/[0-9]/.test(e.key)) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
-                      setDriverContact(cleaned);
-                      if (passFieldErrors.driverContact) setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
-                    }}
-                    className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                      passFieldErrors.driverContact
-                        ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                        : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {passFieldErrors.driverContact && (
-                    <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {passFieldErrors.driverContact}
-                    </p>
-                  )}
-                </div>
-
-                {/* Transporter Name */}
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Transporter Name *</Label>
-                  <Input
-                    placeholder="e.g. VRL Logistics / SafeExpress"
-                    value={transporterName}
-                    onChange={(e) => {
-                      setTransporterName(e.target.value);
-                      if (passFieldErrors.transporterName) setPassFieldErrors((prev) => ({ ...prev, transporterName: null }));
-                    }}
-                    className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                      passFieldErrors.transporterName
-                        ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                        : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                    }`}
-                  />
-                  {passFieldErrors.transporterName && (
-                    <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {passFieldErrors.transporterName}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Inward / Outward fields */}
-              {passType === "INWARD" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                 <div className="space-y-1">
-  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-    Supplier / Source *
-  </Label>
-
-  <Select
-    value={supplierSource}
-    onValueChange={(value) => {
-      // value is "name||code" — store the display name as supplierSource
-      const [name] = value.split("||");
-      setSupplierSource(name);
-
-      if (passFieldErrors.supplierSource) {
-        setPassFieldErrors((prev) => ({
-          ...prev,
-          supplierSource: null,
-        }));
-      }
-    }}
-  >
-    <SelectTrigger
-      className={`h-10 w-full rounded-xl text-xs font-semibold ${
-        passFieldErrors.supplierSource
-          ? "border-red-500 focus:ring-red-500"
-          : "border-slate-200 dark:border-slate-700"
-      }`}
-    >
-      <SelectValue placeholder="Select Supplier" />
-    </SelectTrigger>
-
-    <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-      {suppliers.length === 0 ? (
-        <SelectItem value="no-supplier" disabled>
-          No suppliers found
-        </SelectItem>
-      ) : (
-        suppliers.map((sup) => (
-          <SelectItem
-            key={sup.id}
-            value={`${sup.name}||${sup.code}`}
-            className="text-xs focus:bg-slate-100 dark:focus:bg-slate-800"
-          >
-            {sup.name} ({sup.code})
-          </SelectItem>
-        ))
-      )}
-    </SelectContent>
-  </Select>
-
-  {passFieldErrors.supplierSource && (
-    <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-red-600 dark:text-red-400">
-      <AlertCircle className="h-3 w-3 shrink-0" />
-      {passFieldErrors.supplierSource}
-    </p>
-  )}
-</div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Delivery Challan (DC) # *</Label>
-                    <Input
-                      placeholder="e.g. DC-99410"
-                      value={deliveryChallanNumber}
-                      onChange={(e) => {
-                        setDeliveryChallanNumber(e.target.value);
-                        if (passFieldErrors.deliveryChallanNumber) setPassFieldErrors((prev) => ({ ...prev, deliveryChallanNumber: null }));
-                      }}
-                      className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                        passFieldErrors.deliveryChallanNumber
-                          ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                          : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                      }`}
-                    />
-                    {passFieldErrors.deliveryChallanNumber && (
-                      <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
-                        {passFieldErrors.deliveryChallanNumber}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Declared Quantity *</Label>
-                    <Input
-                      placeholder="e.g. 500 Ltrs / 20 Drums"
-                      value={declaredQuantity}
-                      onChange={(e) => {
-                        setDeclaredQuantity(e.target.value);
-                        if (passFieldErrors.declaredQuantity) setPassFieldErrors((prev) => ({ ...prev, declaredQuantity: null }));
-                      }}
-                      className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                        passFieldErrors.declaredQuantity
-                          ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                          : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                      }`}
-                    />
-                    {passFieldErrors.declaredQuantity && (
-                      <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
-                        {passFieldErrors.declaredQuantity}
-                      </p>
-                    )}
-                  </div>
-
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Invoice Number *</Label>
-                    <Input
-                      placeholder="e.g. INV-2026-9021"
-                      value={invoiceNumber}
-                      onChange={(e) => {
-                        setInvoiceNumber(e.target.value);
-                        if (passFieldErrors.invoiceNumber) setPassFieldErrors((prev) => ({ ...prev, invoiceNumber: null }));
-                      }}
-                      className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                        passFieldErrors.invoiceNumber
-                          ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                          : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                      }`}
-                    />
-                    {passFieldErrors.invoiceNumber && (
-                      <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
-                        {passFieldErrors.invoiceNumber}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Outward Purpose *</Label>
-                    <Input
-                      placeholder="e.g. Sales Dispatch / Equipment Repair"
-                      value={purpose}
-                      onChange={(e) => {
-                        setPurpose(e.target.value);
-                        if (passFieldErrors.purpose) setPassFieldErrors((prev) => ({ ...prev, purpose: null }));
-                      }}
-                      className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
-                        passFieldErrors.purpose
-                          ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                          : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
-                      }`}
-                    />
-                    {passFieldErrors.purpose && (
-                      <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
-                        {passFieldErrors.purpose}
-                      </p>
-                    )}
-                  </div>
-
-                  {isSales && (
-                    <div className="sm:col-span-2 space-y-1">
-                      <div className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
-                        passFieldErrors.coaGenerated
-                          ? "bg-red-100 dark:bg-red-950/20 border-red-400 dark:border-red-900/50 text-red-900 dark:text-red-200"
-                          : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50 text-slate-800 dark:text-slate-200"
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="coaCheck"
-                            checked={coaGenerated}
-                            onCheckedChange={(v) => {
-                              setCoaGenerated(!!v);
-                              if (passFieldErrors.coaGenerated) setPassFieldErrors((prev) => ({ ...prev, coaGenerated: null }));
-                            }}
-                            className="data-[state=checked]:bg-emerald-600"
-                          />
-                          <Label htmlFor="coaCheck" className="text-xs font-bold cursor-pointer text-slate-700 dark:text-slate-300">
-                            Certificate of Analysis (COA) Generated & Verified *
-                          </Label>
-                        </div>
-                        <span className="text-[10px] text-amber-700 dark:text-amber-450 font-semibold">Rule 9.2 Enforced</span>
-                      </div>
-                      {passFieldErrors.coaGenerated && (
-                        <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3 shrink-0" />
-                          {passFieldErrors.coaGenerated}
-                        </p>
-                      )}
-                    </div>
-                  )}
+          <form onSubmit={handleCreatePass} noValidate autoComplete="off" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="p-5 sm:p-6 space-y-4 bg-card flex-1 overflow-y-auto">
+              {formError && (
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2 text-destructive text-xs font-semibold">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{formError}</span>
                 </div>
               )}
 
-              {/* Submit Buttons */}
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowModal(false)}
-                  className="h-10 text-xs font-bold rounded-xl"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={passSubmitting}
-                  className="h-10 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white text-xs font-bold px-6 rounded-xl shadow-lg shadow-sky-600/20"
-                >
-                  {passSubmitting ? "Issuing Gate Pass..." : "Issue Gate Pass"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              {formSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>{formSuccess}</span>
+                </div>
+              )}
 
-      {/* Modal 2: Pass Category CRUD Management */}
-      {showCatModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full p-6 shadow-2xl space-y-5 border border-slate-200 dark:border-slate-800 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-xl flex items-center gap-2">
-                  <Tags className="h-6 w-6 text-purple-600 dark:text-purple-450" />
-                  Pass Category Management (Redux CRUD)
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Create, edit, and manage custom categories for gate pass selection via Redux Toolkit</p>
+              {/* TOP FULL-WIDTH SECTION: MOVEMENT TYPE SELECTION */}
+              <div className="border rounded-2xl p-3.5 bg-muted/20 space-y-2 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-sky-600" />
+                    Select Movement Classification *
+                  </Label>
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    {passType === "INWARD" ? "Raw materials, purchases & inbound" : "Sales dispatches, plant transfers & outbound"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPassType("INWARD");
+                      const firstInward = categories.find(
+                        (c) => c.type === "INWARD" && (c.isActive ?? true)
+                      );
+                      setSelectedCategoryId(firstInward ? String(firstInward.id) : "");
+                    }}
+                    className={`p-2.5 rounded-xl border text-left font-bold text-xs sm:text-sm flex items-center justify-between transition-all cursor-pointer ${
+                      passType === "INWARD"
+                        ? "border-sky-600 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/30 shadow-xs"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-1.5 rounded-lg ${passType === "INWARD" ? "bg-sky-500/20 text-sky-600 dark:text-sky-400" : "bg-muted text-muted-foreground"}`}>
+                        <ArrowDownLeft className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold">9.1 Inward Gate Pass</div>
+                        <div className="text-[11px] font-normal text-muted-foreground">Inbound raw materials & shipments</div>
+                      </div>
+                    </div>
+                    {passType === "INWARD" && (
+                      <div className="h-2.5 w-2.5 rounded-full bg-sky-600 ring-4 ring-sky-500/20 shrink-0" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPassType("OUTWARD");
+                      const firstOutward = categories.find(
+                        (c) => c.type === "OUTWARD" && (c.isActive ?? true)
+                      );
+                      setSelectedCategoryId(firstOutward ? String(firstOutward.id) : "");
+                    }}
+                    className={`p-2.5 rounded-xl border text-left font-bold text-xs sm:text-sm flex items-center justify-between transition-all cursor-pointer ${
+                      passType === "OUTWARD"
+                        ? "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/30 shadow-xs"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-1.5 rounded-lg ${passType === "OUTWARD" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                        <ArrowUpRight className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold">9.2 Outward Gate Pass</div>
+                        <div className="text-[11px] font-normal text-muted-foreground">Outbound dispatches & sales</div>
+                      </div>
+                    </div>
+                    {passType === "OUTWARD" && (
+                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-500/20 shrink-0" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowCatModal(false)}
-                className="h-8 w-8 rounded-full text-slate-400 dark:text-slate-550 hover:text-slate-600 dark:hover:text-slate-350"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              {/* 2-COLUMN WIDE LANDSCAPE GRID */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                {/* LEFT COLUMN: Vehicle & Driver Identification */}
+                <div className="space-y-4">
+                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                      <Truck className="h-4 w-4 text-sky-600" />
+                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        1. Vehicle & Driver Identification
+                      </h4>
+                    </div>
+
+                    {/* Vehicle Number with integrated Photo Upload Button */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vehicleNumber" className="text-xs font-bold text-foreground">
+                        Vehicle Number *
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="vehicleNumber"
+                          placeholder="e.g. MH-04-JK-8842"
+                          value={vehicleNumber}
+                          onChange={(e) => {
+                            setVehicleNumber(e.target.value.toUpperCase());
+                            if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
+                          }}
+                          className={`h-10 pr-32 text-xs sm:text-sm font-mono font-bold uppercase rounded-xl bg-background ${
+                            passFieldErrors.vehicleNumber
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        />
+                        <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-7 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold rounded-lg px-2.5 gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Upload className="h-3 w-3" />
+                            {imageUrl ? "Change Photo" : "Upload Photo"}
+                          </Button>
+                        </div>
+                      </div>
+                      {passFieldErrors.vehicleNumber && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {passFieldErrors.vehicleNumber}
+                        </p>
+                      )}
+
+                      {/* Attached Photo Thumbnail Card */}
+                      {imageUrl && (
+                        <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl border border-border bg-background w-fit">
+                          <Image
+                            src={imageUrl}
+                            alt="Gate Pass Photo"
+                            width={40}
+                            height={40}
+                            className="h-10 w-10 object-cover rounded-lg border border-border"
+                          />
+                          <div className="text-xs">
+                            <p className="font-bold text-foreground">Photo Attached</p>
+                            <button
+                              type="button"
+                              onClick={handleRemoveImage}
+                              className="text-red-500 hover:text-red-600 text-[11px] font-semibold flex items-center gap-1 mt-0.5 cursor-pointer"
+                            >
+                              <Trash2 className="h-3 w-3" /> Remove Photo
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Driver Name */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="driverName" className="text-xs font-bold text-foreground">
+                          Driver Name *
+                        </Label>
+                        <div className="relative">
+                          <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                          <Input
+                            id="driverName"
+                            placeholder="e.g. Rajesh Kumar"
+                            value={driverName}
+                            onKeyDown={(e) => {
+                              if (/[0-9]/.test(e.key)) e.preventDefault();
+                            }}
+                            onChange={(e) => {
+                              const cleaned = e.target.value.replace(/[0-9]/g, "");
+                              setDriverName(cleaned);
+                              if (passFieldErrors.driverName && cleaned.trim()) {
+                                setPassFieldErrors((prev) => ({ ...prev, driverName: null }));
+                              }
+                            }}
+                            className={`h-10 pl-9 text-xs sm:text-sm rounded-xl bg-background ${
+                              passFieldErrors.driverName
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-border focus-visible:ring-sky-500"
+                            }`}
+                          />
+                        </div>
+                        {passFieldErrors.driverName && (
+                          <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {passFieldErrors.driverName}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Driver Contact */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="driverContact" className="text-xs font-bold text-foreground">
+                          Driver Contact (10 Digits) *
+                        </Label>
+                        <Input
+                          id="driverContact"
+                          placeholder="e.g. 9820144512"
+                          value={driverContact}
+                          maxLength={10}
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          onKeyDown={(e) => {
+                            if (
+                              ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+                              e.ctrlKey ||
+                              e.metaKey
+                            ) {
+                              return;
+                            }
+                            if (!/^[0-9]$/.test(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                            setDriverContact(cleaned);
+                            if (passFieldErrors.driverContact && cleaned.length === 10) {
+                              setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
+                            }
+                          }}
+                          className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                            passFieldErrors.driverContact
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        />
+                        {passFieldErrors.driverContact && (
+                          <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {passFieldErrors.driverContact}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Transporter Name */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="transporterName" className="text-xs font-bold text-foreground">
+                        Transporter / Logistics Company *
+                      </Label>
+                      <Input
+                        id="transporterName"
+                        placeholder="e.g. VRL Logistics / SafeExpress"
+                        value={transporterName}
+                        onChange={(e) => {
+                          setTransporterName(e.target.value);
+                          if (passFieldErrors.transporterName) setPassFieldErrors((prev) => ({ ...prev, transporterName: null }));
+                        }}
+                        className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                          passFieldErrors.transporterName
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : "border-border focus-visible:ring-sky-500"
+                        }`}
+                      />
+                      {passFieldErrors.transporterName && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {passFieldErrors.transporterName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: Pass Category, Movement Specifics & Security Notes */}
+                <div className="space-y-4">
+                  {/* Section 2: Pass Category & Movement Details */}
+                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                      <FileText className="h-4 w-4 text-sky-600" />
+                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        2. Pass Category & {passType === "INWARD" ? "Inward Shipment Details" : "Outward Dispatch Details"}
+                      </h4>
+                    </div>
+
+                    {/* Pass Category Dropdown */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="passCategorySelect" className="text-xs font-bold text-foreground">
+                        Pass Category *
+                      </Label>
+                      <Select
+                        value={selectedCategoryId}
+                        onValueChange={(value) => {
+                          setSelectedCategoryId(value);
+                          if (passFieldErrors.category) {
+                            setPassFieldErrors((prev) => ({ ...prev, category: null }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger
+                          id="passCategorySelect"
+                          className={`h-10 rounded-xl text-xs sm:text-sm bg-background font-semibold ${
+                            passFieldErrors.category
+                              ? "border-red-500 focus-visible:ring-red-500"
+                              : "border-border focus-visible:ring-sky-500"
+                          }`}
+                        >
+                          <SelectValue
+                            placeholder={
+                              availableCategoriesForType.length === 0
+                                ? `No categories defined for ${passType}`
+                                : "Select Pass Category"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-56">
+                          {availableCategoriesForType.length === 0 ? (
+                            <div className="py-2 px-3 text-xs text-muted-foreground italic">
+                              No categories defined for {passType}
+                            </div>
+                          ) : (
+                            availableCategoriesForType.map((cat) => (
+                              <SelectItem key={cat.id} value={String(cat.id)} className="text-xs sm:text-sm">
+                                {cat.name} <span className="text-xs text-muted-foreground font-mono">({cat.code})</span>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {passFieldErrors.category && (
+                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          {passFieldErrors.category}
+                        </p>
+                      )}
+                    </div>
+
+                    {passType === "INWARD" ? (
+                      <div className="space-y-3">
+                        {/* Supplier Selection */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="supplierSource" className="text-xs font-bold text-foreground">
+                            Supplier / Source *
+                          </Label>
+                          <Select
+                            value={supplierSource}
+                            onValueChange={(value) => {
+                              const [name] = value.split("||");
+                              setSupplierSource(name);
+                              if (passFieldErrors.supplierSource) {
+                                setPassFieldErrors((prev) => ({ ...prev, supplierSource: null }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger
+                              id="supplierSource"
+                              className={`h-10 rounded-xl text-xs sm:text-sm bg-background font-semibold ${
+                                passFieldErrors.supplierSource
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            >
+                              <SelectValue placeholder="Select Registered Supplier" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-56">
+                              {suppliers.length === 0 ? (
+                                <div className="py-2 px-3 text-xs text-muted-foreground italic">
+                                  No active suppliers found
+                                </div>
+                              ) : (
+                                suppliers.map((sup) => (
+                                  <SelectItem key={sup.id} value={`${sup.name}||${sup.code}`} className="text-xs sm:text-sm">
+                                    {sup.name} <span className="text-xs text-muted-foreground font-mono">({sup.code})</span>
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          {passFieldErrors.supplierSource && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.supplierSource}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Delivery Challan Number */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="deliveryChallanNumber" className="text-xs font-bold text-foreground">
+                              Delivery Challan (DC) # *
+                            </Label>
+                            <Input
+                              id="deliveryChallanNumber"
+                              placeholder="e.g. DC-99410"
+                              value={deliveryChallanNumber}
+                              onChange={(e) => {
+                                setDeliveryChallanNumber(e.target.value);
+                                if (passFieldErrors.deliveryChallanNumber) setPassFieldErrors((prev) => ({ ...prev, deliveryChallanNumber: null }));
+                              }}
+                              className={`h-10 text-xs sm:text-sm rounded-xl bg-background font-mono ${
+                                passFieldErrors.deliveryChallanNumber
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            />
+                            {passFieldErrors.deliveryChallanNumber && (
+                              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {passFieldErrors.deliveryChallanNumber}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Declared Quantity */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="declaredQuantity" className="text-xs font-bold text-foreground">
+                              Declared Quantity *
+                            </Label>
+                            <Input
+                              id="declaredQuantity"
+                              placeholder="e.g. 500 Ltrs / 20 Drums"
+                              value={declaredQuantity}
+                              onChange={(e) => {
+                                setDeclaredQuantity(e.target.value);
+                                if (passFieldErrors.declaredQuantity) setPassFieldErrors((prev) => ({ ...prev, declaredQuantity: null }));
+                              }}
+                              className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                                passFieldErrors.declaredQuantity
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            />
+                            {passFieldErrors.declaredQuantity && (
+                              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {passFieldErrors.declaredQuantity}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Invoice Number */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="invoiceNumber" className="text-xs font-bold text-foreground">
+                              Invoice Number *
+                            </Label>
+                            <Input
+                              id="invoiceNumber"
+                              placeholder="e.g. INV-2026-9021"
+                              value={invoiceNumber}
+                              onChange={(e) => {
+                                setInvoiceNumber(e.target.value);
+                                if (passFieldErrors.invoiceNumber) setPassFieldErrors((prev) => ({ ...prev, invoiceNumber: null }));
+                              }}
+                              className={`h-10 text-xs sm:text-sm rounded-xl bg-background font-mono ${
+                                passFieldErrors.invoiceNumber
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            />
+                            {passFieldErrors.invoiceNumber && (
+                              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {passFieldErrors.invoiceNumber}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Outward Purpose */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="purpose" className="text-xs font-bold text-foreground">
+                              Outward Purpose *
+                            </Label>
+                            <Input
+                              id="purpose"
+                              placeholder="e.g. Sales Dispatch / Repair"
+                              value={purpose}
+                              onChange={(e) => {
+                                setPurpose(e.target.value);
+                                if (passFieldErrors.purpose) setPassFieldErrors((prev) => ({ ...prev, purpose: null }));
+                              }}
+                              className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                                passFieldErrors.purpose
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            />
+                            {passFieldErrors.purpose && (
+                              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {passFieldErrors.purpose}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* COA Verification Checkbox for Sales */}
+                        {isSales && (
+                          <div className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
+                            passFieldErrors.coaGenerated
+                              ? "bg-destructive/10 border-destructive/30 text-destructive"
+                              : "bg-amber-500/10 border-amber-500/30 text-foreground"
+                          }`}>
+                            <div className="flex items-center gap-2.5">
+                              <Checkbox
+                                id="coaCheck"
+                                checked={coaGenerated}
+                                onCheckedChange={(v) => {
+                                  setCoaGenerated(!!v);
+                                  if (passFieldErrors.coaGenerated) setPassFieldErrors((prev) => ({ ...prev, coaGenerated: null }));
+                                }}
+                                className="h-4.5 w-4.5 data-[state=checked]:bg-emerald-600"
+                              />
+                              <Label htmlFor="coaCheck" className="text-xs font-bold cursor-pointer">
+                                Certificate of Analysis (COA) Generated & Verified *
+                              </Label>
+                            </div>
+                            <Badge variant="outline" className="text-[11px] border-amber-500/40 text-amber-500 font-bold">
+                              Rule 9.2 Enforced
+                            </Badge>
+                          </div>
+                        )}
+                        {passFieldErrors.coaGenerated && (
+                          <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {passFieldErrors.coaGenerated}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 3: Security Notes & Live Timestamps */}
+                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                      <Clock className="h-4 w-4 text-sky-600" />
+                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                        3. Security Notes & Live Timestamps
+                      </h4>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="notes" className="text-xs font-bold text-foreground">
+                        Security & Movement Remarks
+                      </Label>
+                      <Textarea
+                        id="notes"
+                        rows={2}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Special instructions, seal condition, gate keeper remarks..."
+                        className="text-xs sm:text-sm rounded-xl bg-background min-h-[60px] border-border focus-visible:ring-sky-500"
+                      />
+                    </div>
+
+                    {/* Automatic Time In indicator */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-background border border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-sky-600" />
+                        <span className="text-xs font-bold text-foreground">Entry Timestamp</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-sky-600 bg-sky-500/10 px-2.5 py-0.5 rounded-lg border border-sky-500/20">
+                        Auto-recorded on submit
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            <div className="px-6 py-3.5 border-t border-border/40 bg-muted/20 shrink-0 flex items-center justify-end gap-3 w-full">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+                className="h-10 text-xs sm:text-sm font-bold rounded-xl px-5"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={passSubmitting}
+                className="h-10 text-xs sm:text-sm bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white font-bold px-7 rounded-xl shadow-lg shadow-sky-600/20"
+              >
+                {passSubmitting ? "Issuing Gate Pass..." : "Issue Gate Pass"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal 2: Pass Category CRUD Management */}
+      <Dialog open={showCatModal} onOpenChange={setShowCatModal}>
+        <DialogContent className="max-w-5xl xl:max-w-6xl w-[96vw] p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
+            <div className="absolute right-6 top-6 opacity-10">
+              <Tags className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+                <Tags className="h-6 w-6 text-purple-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-extrabold tracking-tight text-white">
+                  Pass Category Master Management
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-300 mt-1">
+                  Create, configure, and maintain material and dispatch movement classifications.
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-5 bg-card max-h-[80vh] overflow-y-auto">
             {catError && (
-              <div className="p-3.5 rounded-xl bg-red-100 dark:bg-red-950/20 border border-red-300 dark:border-red-900/50 flex items-center gap-2.5 text-red-800 dark:text-red-300 text-xs font-bold shadow-xs">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
+              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-2.5 text-destructive text-xs sm:text-sm font-semibold">
+                <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{catError}</span>
               </div>
             )}
 
             {catSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/50 flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-bold shadow-xs">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-emerald-400 text-xs sm:text-sm font-semibold">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{catSuccess}</span>
               </div>
             )}
 
             {/* Category Create/Edit Form */}
-            <form onSubmit={handleSaveCategory} noValidate className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <form onSubmit={handleSaveCategory} noValidate className="p-5 rounded-2xl bg-muted/20 border border-border/50 space-y-4 shadow-sm">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 {editingCatId ? "Edit Pass Category" : "Add New Pass Category"}
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Category Name *</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-foreground">Category Name *</Label>
                   <Input
                     placeholder="e.g. Courier & Parcel"
                     value={catName}
@@ -1531,74 +1688,63 @@ export default function GatePassPage() {
                       setCatName(e.target.value);
                       if (catFieldErrors.catName) setCatFieldErrors((prev) => ({ ...prev, catName: null }));
                     }}
-                    className={`h-9 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
+                    className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
                       catFieldErrors.catName
-                        ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                        : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-border focus-visible:ring-sky-500"
                     }`}
                   />
                   {catFieldErrors.catName && (
-                    <p className="text-red-600 dark:text-red-400 text-[10px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
+                    <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       {catFieldErrors.catName}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Code *</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-foreground">Code *</Label>
                   <Input
                     placeholder="e.g. IN_PARCEL"
                     value={catCode}
                     onChange={(e) => {
-                      setCatCode(e.target.value);
+                      setCatCode(e.target.value.toUpperCase());
                       if (catFieldErrors.catCode) setCatFieldErrors((prev) => ({ ...prev, catCode: null }));
                     }}
-                    className={`h-9 text-xs font-mono uppercase rounded-xl bg-transparent text-slate-900 dark:text-slate-100 transition-colors ${
+                    className={`h-10 text-xs sm:text-sm font-mono uppercase rounded-xl bg-background font-bold ${
                       catFieldErrors.catCode
-                        ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 focus-visible:ring-red-500 text-red-900 dark:text-red-200 font-medium"
-                        : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-border focus-visible:ring-sky-500"
                     }`}
                   />
                   {catFieldErrors.catCode && (
-                    <p className="text-red-600 dark:text-red-400 text-[10px] font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
+                    <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       {catFieldErrors.catCode}
                     </p>
                   )}
                 </div>
 
-               <div className="space-y-1">
-  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-    Type *
-  </Label>
-
-  <Select value={catType} onValueChange={setCatType}>
-    <SelectTrigger className="h-9 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold">
-      <SelectValue placeholder="Select Type" />
-    </SelectTrigger>
-
-    <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-      <SelectItem
-        value="INWARD"
-        className="text-xs focus:bg-slate-100 dark:focus:bg-slate-800"
-      >
-        INWARD
-      </SelectItem>
-
-      <SelectItem
-        value="OUTWARD"
-        className="text-xs focus:bg-slate-100 dark:focus:bg-slate-800"
-      >
-        OUTWARD
-      </SelectItem>
-    </SelectContent>
-  </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-foreground">Type *</Label>
+                  <Select value={catType} onValueChange={setCatType}>
+                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background text-xs sm:text-sm font-semibold">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INWARD" className="text-xs sm:text-sm font-bold text-sky-600">
+                        INWARD
+                      </SelectItem>
+                      <SelectItem value="OUTWARD" className="text-xs sm:text-sm font-bold text-emerald-600">
+                        OUTWARD
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description *</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Description *</Label>
                 <Input
                   placeholder="Short explanation of movement covered under this category"
                   value={catDesc}
@@ -1606,23 +1752,25 @@ export default function GatePassPage() {
                     setCatDesc(e.target.value);
                     if (catFieldErrors.catDesc) setCatFieldErrors((prev) => ({ ...prev, catDesc: null }));
                   }}
-                  className={`h-9 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 ${
-                    catFieldErrors.catDesc ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 text-red-900 dark:text-red-200 font-medium" : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
+                  className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                    catFieldErrors.catDesc ? "border-red-500 focus-visible:ring-red-500" : "border-border focus-visible:ring-sky-500"
                   }`}
                 />
                 {catFieldErrors.catDesc && (
-                  <p className="text-red-600 dark:text-red-400 text-[10px] font-bold mt-1 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3 shrink-0" />
+                  <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     {catFieldErrors.catDesc}
                   </p>
                 )}
               </div>
 
               {/* Status Switch Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-background border border-border/50">
                 <div className="space-y-0.5">
-                  <Label htmlFor="category-status-switch" className="text-xs font-bold text-slate-700 dark:text-slate-300">Active Status</Label>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Allow this category to be selected for gate passes when active</p>
+                  <Label htmlFor="category-status-switch" className="text-xs sm:text-sm font-bold text-foreground">
+                    Active Status
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Allow this category to be selected for gate passes when active</p>
                 </div>
                 <Switch
                   id="category-status-switch"
@@ -1631,21 +1779,23 @@ export default function GatePassPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-2 pt-2">
                 {editingCatId && (
-                  <Button type="button" variant="outline" onClick={resetCatForm} className="h-8 text-xs font-bold rounded-xl">
+                  <Button type="button" variant="outline" onClick={resetCatForm} className="h-10 text-xs sm:text-sm font-bold rounded-xl px-4">
                     Cancel Edit
                   </Button>
                 )}
-                <Button type="submit" disabled={catSubmitting} className="h-8 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white text-xs font-bold px-4 rounded-xl shadow-lg shadow-sky-600/20">
+                <Button type="submit" disabled={catSubmitting} className="h-10 bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-bold px-6 rounded-xl shadow-lg shadow-purple-600/20">
                   {catSubmitting ? "Saving..." : editingCatId ? "Update Category" : "Save Category"}
                 </Button>
               </div>
             </form>
 
             {/* Existing Categories List */}
-            <div className="space-y-2 border-t border-slate-100 dark:border-slate-800 pt-4">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-350 uppercase tracking-wider mb-2">Configure Pass Categories Master</h4>
+            <div className="space-y-3 border-t border-border/40 pt-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Configured Pass Categories
+              </h4>
               <DataTable
                 columns={categoryColumns}
                 data={categories}
@@ -1656,8 +1806,8 @@ export default function GatePassPage() {
               />
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Image Modal */}
       {previewImageModal && (

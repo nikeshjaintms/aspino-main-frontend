@@ -31,11 +31,13 @@ import {
   AlertCircle,
   X,
   Layers,
+  Sparkles,
 } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { generatePassCategoryCode } from "@/lib/code-generator";
 
 export default function PassCategoriesPage() {
   const dispatch = useDispatch();
@@ -76,6 +78,7 @@ export default function PassCategoriesPage() {
   const [type, setType] = useState("INWARD");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [isCodeManual, setIsCodeManual] = useState(false);
 
   // Validation & Feedback State
   const [formError, setFormError] = useState("");
@@ -85,6 +88,26 @@ export default function PassCategoriesPage() {
   useEffect(() => {
     dispatch(fetchCategories({ search: debouncedSearch, page: currentPage, limit: pageSize, type: activeTab }));
   }, [dispatch, debouncedSearch, currentPage, pageSize, activeTab]);
+
+  // Live name sync
+  const handleNameChange = (val) => {
+    setName(val);
+    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: null }));
+    if (!isCodeManual) {
+      const generated = generatePassCategoryCode(val, type);
+      setCode(generated);
+      if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
+    }
+  };
+
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    if (!isCodeManual && name.trim()) {
+      const generated = generatePassCategoryCode(name, newType);
+      setCode(generated);
+      if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -168,6 +191,7 @@ export default function PassCategoriesPage() {
     setType(cat.type);
     setDescription(cat.description || "");
     setIsActive(cat.isActive ?? true);
+    setIsCodeManual(true);
     setFormError("");
     setFormSuccess("");
     setFieldErrors({});
@@ -181,6 +205,7 @@ export default function PassCategoriesPage() {
     setType("INWARD");
     setDescription("");
     setIsActive(true);
+    setIsCodeManual(false);
     setFormError("");
     setFormSuccess("");
     setFieldErrors({});
@@ -524,10 +549,7 @@ export default function PassCategoriesPage() {
                 <Input
                   placeholder="e.g. Courier / Sample Dispatch"
                   value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: null }));
-                  }}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   className={`h-10 text-xs rounded-xl bg-transparent text-slate-900 dark:text-slate-100 ${
                     fieldErrors.name ? "border-red-500 dark:border-red-500 bg-red-50/30 dark:bg-red-950/20 text-red-900 dark:text-red-200 font-medium" : "border-slate-200 dark:border-slate-700 focus-visible:ring-sky-500"
                   }`}
@@ -542,12 +564,31 @@ export default function PassCategoriesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Category Code *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Category Code *</Label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const auto = generatePassCategoryCode(name, type);
+                        if (auto) {
+                          setCode(auto);
+                          setIsCodeManual(false);
+                          if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
+                        }
+                      }}
+                      className="text-[11px] text-sky-600 hover:text-sky-700 dark:text-sky-400 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+                      title="Auto-derive code from name"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Auto-derive
+                    </button>
+                  </div>
                   <Input
-                    placeholder="e.g. OUT_SAMPLE"
+                    placeholder="e.g. OUT_SAMPLE, IN_MAT"
                     value={code}
                     onChange={(e) => {
-                      setCode(e.target.value);
+                      setCode(e.target.value.toUpperCase());
+                      setIsCodeManual(true);
                       if (fieldErrors.code) setFieldErrors((prev) => ({ ...prev, code: null }));
                     }}
                     className={`h-10 text-xs font-mono uppercase rounded-xl bg-transparent text-slate-900 dark:text-slate-100 ${
@@ -564,24 +605,15 @@ export default function PassCategoriesPage() {
 
                 <div className="space-y-1">
                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Movement Type *</Label>
-                  {/* <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-250 bg-slate-50 dark:bg-slate-850 focus-visible:ring-sky-500"
-                  >
-                    <option value="INWARD" className="dark:bg-slate-900 dark:text-slate-200">INWARD</option>
-                    <option value="OUTWARD" className="dark:bg-slate-900 dark:text-slate-200">OUTWARD</option>
-                  </select> */}
-                  <Select value={type} onValueChange={setType}>
-  <SelectTrigger className="h-10 rounded-xl">
-    <SelectValue placeholder="Select Movement Type" />
-  </SelectTrigger>
-
-  <SelectContent>
-    <SelectItem value="INWARD">INWARD</SelectItem>
-    <SelectItem value="OUTWARD">OUTWARD</SelectItem>
-  </SelectContent>
-</Select>
+                  <Select value={type} onValueChange={handleTypeChange}>
+                    <SelectTrigger className="h-10 rounded-xl">
+                      <SelectValue placeholder="Select Movement Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INWARD">INWARD</SelectItem>
+                      <SelectItem value="OUTWARD">OUTWARD</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
