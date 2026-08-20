@@ -64,6 +64,9 @@ import {
   Upload,
   Eye,
   ImageIcon,
+  Users,
+  Building2,
+  User,
 } from "lucide-react";
 
 import { GatePassHeader } from "@/components/gate-pass/GatePassHeader";
@@ -100,8 +103,10 @@ export default function GatePassPage() {
   const [showModal, setShowModal] = useState(false);
   const [passType, setPassType] = useState("INWARD");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-
-  const selectedCatObj = categories.find((c) => c.id === selectedCategoryId);
+  const selectedCatObj = categories.find((c) => String(c.id) === String(selectedCategoryId));
+  const isVisitor = selectedCatObj
+    ? selectedCatObj.name.toLowerCase().includes("visitor") || selectedCatObj.code?.toLowerCase().includes("visitor Entry")
+    : false;
   const isSales = selectedCatObj ? selectedCatObj.name.toLowerCase().includes("sales") : false;
 
   // Form Fields for Gate Pass
@@ -331,59 +336,97 @@ export default function GatePassPage() {
       errors.category = "Pass Category is required.";
     }
 
-    // 2. Vehicle Number Validation
-    if (!vehicleNumber.trim()) {
-      errors.vehicleNumber = "Vehicle Number is required.";
-    } else if (vehicleNumber.trim().length < 4) {
-      errors.vehicleNumber = "Vehicle Number must be at least 4 characters.";
-    } else if (!/^[A-Z0-9\-\s]{4,20}$/i.test(vehicleNumber.trim())) {
-      errors.vehicleNumber = "Invalid Vehicle Number format (e.g. MH-04-JK-8842).";
-    }
+    if (isVisitor) {
+      // 2. Visitor Name Validation
+      if (!driverName.trim()) {
+        errors.driverName = "Visitor Full Name is required.";
+      } else if (driverName.trim().length < 2) {
+        errors.driverName = "Visitor Name must be at least 2 characters.";
+      }
 
-    // 3. Driver Name Validation
-    if (!driverName.trim()) {
-      errors.driverName = "Driver Name is required.";
-    } else if (driverName.trim().length < 2) {
-      errors.driverName = "Driver Name must be at least 2 characters.";
-    }
+      // 3. Visitor Contact Validation
+      if (!driverContact.trim()) {
+        errors.driverContact = "Visitor Contact No is required.";
+      } else if (!/^\d{10}$/.test(driverContact.trim())) {
+        errors.driverContact = "Please enter a valid 10-digit Mobile number.";
+      }
 
-    // 4. Driver Contact Validation
-    if (!driverContact.trim()) {
-      errors.driverContact = "Driver Contact No is required.";
-    } else if (!/^\d{10}$/.test(driverContact.trim())) {
-  errors.driverContact = "Please enter a valid 10-digit Mobile number.";
-}
+      // 4. Visiting From / Organization Validation
+      if (!transporterName.trim()) {
+        errors.transporterName = "Visiting From / Company / Organization is required.";
+      }
 
-    // 5. Transporter Name Validation
-    if (!transporterName.trim()) {
-      errors.transporterName = "Transporter Name is required.";
-    }
+      // 5. Vehicle / Entry Mode Validation
+      if (!vehicleNumber.trim()) {
+        errors.vehicleNumber = "Vehicle Number or Entry Mode (e.g. WALKING) is required.";
+      } else if (!/^[A-Z0-9\-\s]{2,20}$/i.test(vehicleNumber.trim())) {
+        errors.vehicleNumber = "Invalid Vehicle / Entry Mode format.";
+      }
 
-    // 6. Inward Specific Fields Validation
-    if (passType === "INWARD") {
+      // 6. Person to Meet / Department Validation
       if (!supplierSource.trim()) {
-        errors.supplierSource = "Supplier / Source is required.";
-      }
-      if (!deliveryChallanNumber.trim()) {
-        errors.deliveryChallanNumber = "Delivery Challan (DC) # is required.";
-      }
-      if (!declaredQuantity.trim()) {
-        errors.declaredQuantity = "Declared Quantity is required.";
-      }
-    }
-
-    // 7. Outward Specific Fields Validation
-    if (passType === "OUTWARD") {
-      if (!invoiceNumber.trim()) {
-        errors.invoiceNumber = "Invoice Number is required.";
+        errors.supplierSource = "Person to Meet / Host Department is required.";
       }
 
+      // 7. Purpose of Visit Validation
       if (!purpose.trim()) {
-        errors.purpose = "Outward Purpose is required.";
+        errors.purpose = "Purpose of Visit is required.";
+      }
+    } else {
+      // 2. Vehicle Number Validation
+      if (!vehicleNumber.trim()) {
+        errors.vehicleNumber = "Vehicle Number is required.";
+      } else if (vehicleNumber.trim().length < 4) {
+        errors.vehicleNumber = "Vehicle Number must be at least 4 characters.";
+      } else if (!/^[A-Z0-9\-\s]{4,20}$/i.test(vehicleNumber.trim())) {
+        errors.vehicleNumber = "Invalid Vehicle Number format (e.g. MH-04-JK-8842).";
       }
 
-      if (isSales && !coaGenerated) {
-        errors.coaGenerated = "COA Generation & Verification is required for Sales Dispatch.";
+      // 3. Driver Name Validation
+      if (!driverName.trim()) {
+        errors.driverName = "Driver Name is required.";
+      } else if (driverName.trim().length < 2) {
+        errors.driverName = "Driver Name must be at least 2 characters.";
+      }
+
+      // 4. Driver Contact Validation
+      if (!driverContact.trim()) {
+        errors.driverContact = "Driver Contact No is required.";
+      } else if (!/^\d{10}$/.test(driverContact.trim())) {
+        errors.driverContact = "Please enter a valid 10-digit Mobile number.";
+      }
+
+      // 5. Transporter Name Validation
+      if (!transporterName.trim()) {
+        errors.transporterName = "Transporter Name is required.";
+      }
+
+      // 6. Inward Specific Fields Validation
+      if (passType === "INWARD") {
+        if (!supplierSource.trim()) {
+          errors.supplierSource = "Supplier / Source is required.";
+        }
+        if (!deliveryChallanNumber.trim()) {
+          errors.deliveryChallanNumber = "Delivery Challan (DC) # is required.";
+        }
+        if (!declaredQuantity.trim()) {
+          errors.declaredQuantity = "Declared Quantity is required.";
+        }
+      }
+
+      // 7. Outward Specific Fields Validation
+      if (passType === "OUTWARD") {
+        if (!invoiceNumber.trim()) {
+          errors.invoiceNumber = "Invoice Number is required.";
+        }
+
+        if (!purpose.trim()) {
+          errors.purpose = "Outward Purpose is required.";
+        }
+
+        if (isSales && !coaGenerated) {
+          errors.coaGenerated = "COA Generation & Verification is required for Sales Dispatch.";
+        }
       }
     }
 
@@ -402,8 +445,8 @@ export default function GatePassPage() {
         driverContact: driverContact.trim(),
         transporterName: transporterName.trim(),
         supplierSource: supplierSource.trim(),
-        deliveryChallanNumber: deliveryChallanNumber.trim(),
-        declaredQuantity: declaredQuantity.trim(),
+        deliveryChallanNumber: isVisitor ? (deliveryChallanNumber.trim() || "N/A") : deliveryChallanNumber.trim(),
+        declaredQuantity: isVisitor ? (declaredQuantity.trim() || "1 Person") : declaredQuantity.trim(),
         grnNumber: grnNumber.trim(),
         invoiceNumber: invoiceNumber.trim(),
         coaGenerated,
@@ -629,44 +672,71 @@ export default function GatePassPage() {
     },
     {
       accessorKey: "vehicleNumber",
-      header: "Vehicle & Driver",
-      cell: (row) => (
-        <div className="flex items-start gap-2.5">
-          {row.imageUrl ? (
-            <div
-              onClick={() => setPreviewImageModal(row.imageUrl)}
-              className="relative group cursor-pointer shrink-0 mt-0.5"
-              title="Click to view attached image"
-            >
-              <Image
-                src={row.imageUrl}
-                alt="Vehicle / Pass"
-                width={36}
-                height={36}
-                className="h-9 w-9 object-cover rounded-lg border border-slate-200 dark:border-slate-800 group-hover:opacity-80 transition-opacity shadow-xs"
-              />
-              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
-                <Eye className="h-3.5 w-3.5 text-white" />
+      header: "Vehicle & Driver / Visitor",
+      cell: (row) => {
+        const rowIsVis =
+          row.category?.name?.toLowerCase().includes("visitor") ||
+          row.category?.code?.toLowerCase().includes("vis");
+        return (
+          <div className="flex items-start gap-2.5">
+            {row.imageUrl ? (
+              <div
+                onClick={() => setPreviewImageModal(row.imageUrl)}
+                className="relative group cursor-pointer shrink-0 mt-0.5"
+                title="Click to view attached image"
+              >
+                <Image
+                  src={row.imageUrl}
+                  alt="Vehicle / Pass"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 object-cover rounded-lg border border-slate-200 dark:border-slate-800 group-hover:opacity-80 transition-opacity shadow-xs"
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition-opacity">
+                  <Eye className="h-3.5 w-3.5 text-white" />
+                </div>
+              </div>
+            ) : null}
+            <div>
+              <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                {rowIsVis ? (
+                  <User className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                ) : (
+                  <Truck className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                )}
+                {row.vehicleNumber}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {row.driverName} {row.driverContact ? `(${row.driverContact})` : ""}
+                {rowIsVis && row.transporterName ? ` • ${row.transporterName}` : ""}
               </div>
             </div>
-          ) : null}
-          <div>
-            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-              {row.vehicleNumber}
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              {row.driverName} {row.driverContact ? `(${row.driverContact})` : ""}
-            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       accessorKey: "supplierSource",
-      header: "Source / Purpose",
+      header: "Source / Purpose / Host",
       cell: (row) => {
+        const rowIsVis =
+          row.category?.name?.toLowerCase().includes("visitor") ||
+          row.category?.code?.toLowerCase().includes("vis");
         const isInward = row.type === "INWARD";
+
+        if (rowIsVis) {
+          return (
+            <div>
+              <div className="font-semibold text-slate-800 dark:text-slate-200">
+                To Meet: <span className="font-bold">{row.supplierSource || "N/A"}</span>
+              </div>
+              <div className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                {row.purpose || "Official Visit"}
+              </div>
+            </div>
+          );
+        }
+
         return isInward ? (
           <div>
             <div className="font-semibold text-slate-800 dark:text-slate-200">{row.supplierSource || "N/A"}</div>
@@ -685,7 +755,21 @@ export default function GatePassPage() {
       accessorKey: "invoiceNumber",
       header: "Reference Docs",
       cell: (row) => {
+        const rowIsVis =
+          row.category?.name?.toLowerCase().includes("visitor") ||
+          row.category?.code?.toLowerCase().includes("vis");
         const isInward = row.type === "INWARD";
+
+        if (rowIsVis) {
+          return (
+            <div className="space-y-0.5 text-[11px] text-slate-700 dark:text-slate-300">
+              <Badge variant="outline" className="text-[10px] bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 font-medium">
+                👤 {row.declaredQuantity || "1 Person"}
+              </Badge>
+            </div>
+          );
+        }
+
         return isInward ? (
           <div className="space-y-0.5 text-[11px] text-slate-700 dark:text-slate-300">
             {row.deliveryChallanNumber && (
@@ -986,7 +1070,8 @@ export default function GatePassPage() {
             </div>
           </Tabs>
         </CardContent>
-      </Card>      {/* Modal 1: Issue Gate Pass (PERFECT FULL SCREEN VIEW 2-COLUMN LANDSCAPE) */}
+      </Card>
+      {/* Modal 1: Issue Gate Pass (PERFECT FULL SCREEN VIEW 2-COLUMN LANDSCAPE) */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-6xl xl:max-w-7xl w-[96vw] max-h-[94vh] p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card flex flex-col">
           {/* Top Gradient Header Banner */}
@@ -1122,96 +1207,33 @@ export default function GatePassPage() {
 
               {/* 2-COLUMN WIDE LANDSCAPE GRID */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                {/* LEFT COLUMN: Vehicle & Driver Identification */}
+                {/* LEFT COLUMN: Vehicle & Driver OR Visitor Identification */}
                 <div className="space-y-4">
-                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
-                      <Truck className="h-4 w-4 text-sky-600" />
-                      <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        1. Vehicle & Driver Identification
-                      </h4>
-                    </div>
-
-                    {/* Vehicle Number with integrated Photo Upload Button */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="vehicleNumber" className="text-xs font-bold text-foreground">
-                        Vehicle Number *
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="vehicleNumber"
-                          placeholder="e.g. MH-04-JK-8842"
-                          value={vehicleNumber}
-                          onChange={(e) => {
-                            setVehicleNumber(e.target.value.toUpperCase());
-                            if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
-                          }}
-                          className={`h-10 pr-32 text-xs sm:text-sm font-mono font-bold uppercase rounded-xl bg-background ${
-                            passFieldErrors.vehicleNumber
-                              ? "border-red-500 focus-visible:ring-red-500"
-                              : "border-border focus-visible:ring-sky-500"
-                          }`}
-                        />
-                        <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleImageUpload}
-                            accept="image/*"
-                            className="hidden"
-                          />
-                          <Button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="h-7 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold rounded-lg px-2.5 gap-1 shadow-xs cursor-pointer"
-                          >
-                            <Upload className="h-3 w-3" />
-                            {imageUrl ? "Change Photo" : "Upload Photo"}
-                          </Button>
+                  {isVisitor ? (
+                    /* VISITOR SPECIFIC LEFT COLUMN */
+                    <div className="border border-purple-200 dark:border-purple-900/50 rounded-2xl p-4 bg-purple-50/30 dark:bg-purple-950/10 space-y-3.5 shadow-sm">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-purple-200/50 dark:border-purple-800/40">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-purple-900 dark:text-purple-200">
+                            1. Visitor Personal & Contact Details
+                          </h4>
                         </div>
+                        <Badge className="bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800 text-[10px] font-bold">
+                          Visitor Pass Mode
+                        </Badge>
                       </div>
-                      {passFieldErrors.vehicleNumber && (
-                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                          {passFieldErrors.vehicleNumber}
-                        </p>
-                      )}
 
-                      {/* Attached Photo Thumbnail Card */}
-                      {imageUrl && (
-                        <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl border border-border bg-background w-fit">
-                          <Image
-                            src={imageUrl}
-                            alt="Gate Pass Photo"
-                            width={40}
-                            height={40}
-                            className="h-10 w-10 object-cover rounded-lg border border-border"
-                          />
-                          <div className="text-xs">
-                            <p className="font-bold text-foreground">Photo Attached</p>
-                            <button
-                              type="button"
-                              onClick={handleRemoveImage}
-                              className="text-red-500 hover:text-red-600 text-[11px] font-semibold flex items-center gap-1 mt-0.5 cursor-pointer"
-                            >
-                              <Trash2 className="h-3 w-3" /> Remove Photo
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Driver Name */}
+                      {/* Visitor Full Name */}
                       <div className="space-y-1.5">
                         <Label htmlFor="driverName" className="text-xs font-bold text-foreground">
-                          Driver Name *
+                          Visitor Full Name *
                         </Label>
                         <div className="relative">
                           <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
                           <Input
                             id="driverName"
-                            placeholder="e.g. Rajesh Kumar"
+                            placeholder="e.g. Dr. Amit Sharma / Rajesh Verma"
                             value={driverName}
                             onKeyDown={(e) => {
                               if (/[0-9]/.test(e.key)) e.preventDefault();
@@ -1226,7 +1248,7 @@ export default function GatePassPage() {
                             className={`h-10 pl-9 text-xs sm:text-sm rounded-xl bg-background ${
                               passFieldErrors.driverName
                                 ? "border-red-500 focus-visible:ring-red-500"
-                                : "border-border focus-visible:ring-sky-500"
+                                : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
                             }`}
                           />
                         </div>
@@ -1238,89 +1260,369 @@ export default function GatePassPage() {
                         )}
                       </div>
 
-                      {/* Driver Contact */}
+                      {/* Visitor Contact & Visiting From / Organization */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="driverContact" className="text-xs font-bold text-foreground">
+                            Mobile Contact (10 Digits) *
+                          </Label>
+                          <Input
+                            id="driverContact"
+                            placeholder="e.g. 9870011223"
+                            value={driverContact}
+                            maxLength={10}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            onKeyDown={(e) => {
+                              if (
+                                ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+                                e.ctrlKey ||
+                                e.metaKey
+                              ) {
+                                return;
+                              }
+                              if (!/^[0-9]$/.test(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              setDriverContact(cleaned);
+                              if (passFieldErrors.driverContact && cleaned.length === 10) {
+                                setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
+                              }
+                            }}
+                            className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                              passFieldErrors.driverContact
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                            }`}
+                          />
+                          {passFieldErrors.driverContact && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.driverContact}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="transporterName" className="text-xs font-bold text-foreground">
+                            Visiting From / Company *
+                          </Label>
+                          <div className="relative">
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                            <Input
+                              id="transporterName"
+                              placeholder="e.g. FDA Team / Cipla / Self"
+                              value={transporterName}
+                              onChange={(e) => {
+                                setTransporterName(e.target.value);
+                                if (passFieldErrors.transporterName) setPassFieldErrors((prev) => ({ ...prev, transporterName: null }));
+                              }}
+                              className={`h-10 pl-9 text-xs sm:text-sm rounded-xl bg-background ${
+                                passFieldErrors.transporterName
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                              }`}
+                            />
+                          </div>
+                          {passFieldErrors.transporterName && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.transporterName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Vehicle Number / Entry Mode */}
                       <div className="space-y-1.5">
-                        <Label htmlFor="driverContact" className="text-xs font-bold text-foreground">
-                          Driver Contact (10 Digits) *
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="vehicleNumber" className="text-xs font-bold text-foreground">
+                            Vehicle No. or Entry Mode *
+                          </Label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVehicleNumber("WALKING");
+                              if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
+                            }}
+                            className="text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            🚶 Set "WALKING" (Pedestrian)
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <Input
+                            id="vehicleNumber"
+                            placeholder="e.g. MH-12-PQ-2019 or WALKING"
+                            value={vehicleNumber}
+                            onChange={(e) => {
+                              setVehicleNumber(e.target.value.toUpperCase());
+                              if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
+                            }}
+                            className={`h-10 pr-32 text-xs sm:text-sm font-mono font-bold uppercase rounded-xl bg-background ${
+                              passFieldErrors.vehicleNumber
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                            }`}
+                          />
+                          <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleImageUpload}
+                              accept="image/*"
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-7 bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold rounded-lg px-2.5 gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Upload className="h-3 w-3" />
+                              {imageUrl ? "Change Photo" : "Upload Photo"}
+                            </Button>
+                          </div>
+                        </div>
+                        {passFieldErrors.vehicleNumber && (
+                          <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {passFieldErrors.vehicleNumber}
+                          </p>
+                        )}
+
+                        {/* Attached Photo Thumbnail Card */}
+                        {imageUrl && (
+                          <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-background w-fit">
+                            <Image
+                              src={imageUrl}
+                              alt="Gate Pass Photo"
+                              width={40}
+                              height={40}
+                              className="h-10 w-10 object-cover rounded-lg border border-purple-200"
+                            />
+                            <div className="text-xs">
+                              <p className="font-bold text-foreground">Photo Attached</p>
+                              <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="text-red-500 hover:text-red-600 text-[11px] font-semibold flex items-center gap-1 mt-0.5 cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" /> Remove Photo
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* STANDARD MATERIAL VEHICLE & DRIVER IDENTIFICATION */
+                    <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
+                      <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
+                        <Truck className="h-4 w-4 text-sky-600" />
+                        <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                          1. Vehicle & Driver Identification
+                        </h4>
+                      </div>
+
+                      {/* Vehicle Number with integrated Photo Upload Button */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="vehicleNumber" className="text-xs font-bold text-foreground">
+                          Vehicle Number *
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="vehicleNumber"
+                            placeholder="e.g. MH-04-JK-8842"
+                            value={vehicleNumber}
+                            onChange={(e) => {
+                              setVehicleNumber(e.target.value.toUpperCase());
+                              if (passFieldErrors.vehicleNumber) setPassFieldErrors((prev) => ({ ...prev, vehicleNumber: null }));
+                            }}
+                            className={`h-10 pr-32 text-xs sm:text-sm font-mono font-bold uppercase rounded-xl bg-background ${
+                              passFieldErrors.vehicleNumber
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-border focus-visible:ring-sky-500"
+                            }`}
+                          />
+                          <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleImageUpload}
+                              accept="image/*"
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-7 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold rounded-lg px-2.5 gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Upload className="h-3 w-3" />
+                              {imageUrl ? "Change Photo" : "Upload Photo"}
+                            </Button>
+                          </div>
+                        </div>
+                        {passFieldErrors.vehicleNumber && (
+                          <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {passFieldErrors.vehicleNumber}
+                          </p>
+                        )}
+
+                        {/* Attached Photo Thumbnail Card */}
+                        {imageUrl && (
+                          <div className="mt-2 flex items-center gap-2.5 p-2 rounded-xl border border-border bg-background w-fit">
+                            <Image
+                              src={imageUrl}
+                              alt="Gate Pass Photo"
+                              width={40}
+                              height={40}
+                              className="h-10 w-10 object-cover rounded-lg border border-border"
+                            />
+                            <div className="text-xs">
+                              <p className="font-bold text-foreground">Photo Attached</p>
+                              <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="text-red-500 hover:text-red-600 text-[11px] font-semibold flex items-center gap-1 mt-0.5 cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" /> Remove Photo
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Driver Name */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="driverName" className="text-xs font-bold text-foreground">
+                            Driver Name *
+                          </Label>
+                          <div className="relative">
+                            <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+                            <Input
+                              id="driverName"
+                              placeholder="e.g. Rajesh Kumar"
+                              value={driverName}
+                              onKeyDown={(e) => {
+                                if (/[0-9]/.test(e.key)) e.preventDefault();
+                              }}
+                              onChange={(e) => {
+                                const cleaned = e.target.value.replace(/[0-9]/g, "");
+                                setDriverName(cleaned);
+                                if (passFieldErrors.driverName && cleaned.trim()) {
+                                  setPassFieldErrors((prev) => ({ ...prev, driverName: null }));
+                                }
+                              }}
+                              className={`h-10 pl-9 text-xs sm:text-sm rounded-xl bg-background ${
+                                passFieldErrors.driverName
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-border focus-visible:ring-sky-500"
+                              }`}
+                            />
+                          </div>
+                          {passFieldErrors.driverName && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.driverName}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Driver Contact */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="driverContact" className="text-xs font-bold text-foreground">
+                            Driver Contact (10 Digits) *
+                          </Label>
+                          <Input
+                            id="driverContact"
+                            placeholder="e.g. 9820144512"
+                            value={driverContact}
+                            maxLength={10}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            onKeyDown={(e) => {
+                              if (
+                                ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+                                e.ctrlKey ||
+                                e.metaKey
+                              ) {
+                                return;
+                              }
+                              if (!/^[0-9]$/.test(e.key)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
+                              setDriverContact(cleaned);
+                              if (passFieldErrors.driverContact && cleaned.length === 10) {
+                                setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
+                              }
+                            }}
+                            className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                              passFieldErrors.driverContact
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-border focus-visible:ring-sky-500"
+                            }`}
+                          />
+                          {passFieldErrors.driverContact && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.driverContact}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Transporter Name */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="transporterName" className="text-xs font-bold text-foreground">
+                          Transporter / Logistics Company *
                         </Label>
                         <Input
-                          id="driverContact"
-                          placeholder="e.g. 9820144512"
-                          value={driverContact}
-                          maxLength={10}
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          onKeyDown={(e) => {
-                            if (
-                              ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
-                              e.ctrlKey ||
-                              e.metaKey
-                            ) {
-                              return;
-                            }
-                            if (!/^[0-9]$/.test(e.key)) {
-                              e.preventDefault();
-                            }
-                          }}
+                          id="transporterName"
+                          placeholder="e.g. VRL Logistics / SafeExpress"
+                          value={transporterName}
                           onChange={(e) => {
-                            const cleaned = e.target.value.replace(/\D/g, "").slice(0, 10);
-                            setDriverContact(cleaned);
-                            if (passFieldErrors.driverContact && cleaned.length === 10) {
-                              setPassFieldErrors((prev) => ({ ...prev, driverContact: null }));
-                            }
+                            setTransporterName(e.target.value);
+                            if (passFieldErrors.transporterName) setPassFieldErrors((prev) => ({ ...prev, transporterName: null }));
                           }}
                           className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
-                            passFieldErrors.driverContact
+                            passFieldErrors.transporterName
                               ? "border-red-500 focus-visible:ring-red-500"
                               : "border-border focus-visible:ring-sky-500"
                           }`}
                         />
-                        {passFieldErrors.driverContact && (
+                        {passFieldErrors.transporterName && (
                           <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                            {passFieldErrors.driverContact}
+                            {passFieldErrors.transporterName}
                           </p>
                         )}
                       </div>
                     </div>
-
-                    {/* Transporter Name */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="transporterName" className="text-xs font-bold text-foreground">
-                        Transporter / Logistics Company *
-                      </Label>
-                      <Input
-                        id="transporterName"
-                        placeholder="e.g. VRL Logistics / SafeExpress"
-                        value={transporterName}
-                        onChange={(e) => {
-                          setTransporterName(e.target.value);
-                          if (passFieldErrors.transporterName) setPassFieldErrors((prev) => ({ ...prev, transporterName: null }));
-                        }}
-                        className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
-                          passFieldErrors.transporterName
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : "border-border focus-visible:ring-sky-500"
-                        }`}
-                      />
-                      {passFieldErrors.transporterName && (
-                        <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                          {passFieldErrors.transporterName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* RIGHT COLUMN: Pass Category, Movement Specifics & Security Notes */}
                 <div className="space-y-4">
-                  {/* Section 2: Pass Category & Movement Details */}
-                  <div className="border rounded-2xl p-4 bg-muted/20 space-y-3.5 shadow-sm">
+                  {/* Section 2: Pass Category & Details */}
+                  <div className={`border rounded-2xl p-4 space-y-3.5 shadow-sm ${
+                    isVisitor
+                      ? "border-purple-200 dark:border-purple-900/50 bg-purple-50/30 dark:bg-purple-950/10"
+                      : "bg-muted/20 border-border"
+                  }`}>
                     <div className="flex items-center gap-2 pb-1.5 border-b border-border/40">
-                      <FileText className="h-4 w-4 text-sky-600" />
+                      <FileText className={`h-4 w-4 ${isVisitor ? "text-purple-600 dark:text-purple-400" : "text-sky-600"}`} />
                       <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                        2. Pass Category & {passType === "INWARD" ? "Inward Shipment Details" : "Outward Dispatch Details"}
+                        {isVisitor
+                          ? "2. Pass Category, Host & Purpose of Visit"
+                          : `2. Pass Category & ${passType === "INWARD" ? "Inward Shipment Details" : "Outward Dispatch Details"}`}
                       </h4>
                     </div>
 
@@ -1343,6 +1645,8 @@ export default function GatePassPage() {
                           className={`h-10 rounded-xl text-xs sm:text-sm bg-background font-semibold ${
                             passFieldErrors.category
                               ? "border-red-500 focus-visible:ring-red-500"
+                              : isVisitor
+                              ? "border-purple-300 dark:border-purple-800 focus-visible:ring-purple-500 ring-1 ring-purple-400/30"
                               : "border-border focus-visible:ring-sky-500"
                           }`}
                         >
@@ -1376,7 +1680,83 @@ export default function GatePassPage() {
                       )}
                     </div>
 
-                    {passType === "INWARD" ? (
+                    {isVisitor ? (
+                      /* VISITOR SPECIFIC HOST & PURPOSE FIELDS */
+                      <div className="space-y-3">
+                        {/* Person to Meet / Department */}
+                        <div className="space-y-1.5">
+                          <Label htmlFor="supplierSource" className="text-xs font-bold text-foreground">
+                            Person to Meet / Host Department *
+                          </Label>
+                          <Input
+                            id="supplierSource"
+                            placeholder="e.g. Dr. Rajesh Sharma (QC Head) / Admin Office / HR"
+                            value={supplierSource}
+                            onChange={(e) => {
+                              setSupplierSource(e.target.value);
+                              if (passFieldErrors.supplierSource) {
+                                setPassFieldErrors((prev) => ({ ...prev, supplierSource: null }));
+                              }
+                            }}
+                            className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                              passFieldErrors.supplierSource
+                                ? "border-red-500 focus-visible:ring-red-500"
+                                : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                            }`}
+                          />
+                          {passFieldErrors.supplierSource && (
+                            <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              {passFieldErrors.supplierSource}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* Purpose of Visit */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="purpose" className="text-xs font-bold text-foreground">
+                              Purpose of Visit *
+                            </Label>
+                            <Input
+                              id="purpose"
+                              placeholder="e.g. GMP Audit / Official Meeting"
+                              value={purpose}
+                              onChange={(e) => {
+                                setPurpose(e.target.value);
+                                if (passFieldErrors.purpose) setPassFieldErrors((prev) => ({ ...prev, purpose: null }));
+                              }}
+                              className={`h-10 text-xs sm:text-sm rounded-xl bg-background ${
+                                passFieldErrors.purpose
+                                  ? "border-red-500 focus-visible:ring-red-500"
+                                  : "border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                              }`}
+                            />
+                            {passFieldErrors.purpose && (
+                              <p className="text-red-500 text-xs font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                                {passFieldErrors.purpose}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Number of Persons / Badge ID */}
+                          <div className="space-y-1.5">
+                            <Label htmlFor="declaredQuantity" className="text-xs font-bold text-foreground">
+                              Number of Persons / Badge Ref
+                            </Label>
+                            <Input
+                              id="declaredQuantity"
+                              placeholder="e.g. 1 Person / Badge-04"
+                              value={declaredQuantity}
+                              onChange={(e) => setDeclaredQuantity(e.target.value)}
+                              className="h-10 text-xs sm:text-sm rounded-xl bg-background border-purple-200 dark:border-purple-800/60 focus-visible:ring-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : passType === "INWARD" ? (
+                      /* STANDARD INWARD SHIPMENT FIELDS */
                       <div className="space-y-3">
                         {/* Supplier Selection */}
                         <div className="space-y-1.5">
@@ -1482,6 +1862,7 @@ export default function GatePassPage() {
                         </div>
                       </div>
                     ) : (
+                      /* STANDARD OUTWARD SHIPMENT FIELDS */
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {/* Invoice Number */}
