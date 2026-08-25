@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export function AspinoIcon({ className, size = 36 }) {
@@ -9,9 +10,11 @@ export function AspinoIcon({ className, size = 36 }) {
       )}
       style={{ width: size, height: size }}
     >
-      <img
+      <Image
         src="/aspino-icon.png"
         alt="Aspino"
+        width={size}
+        height={size}
         className="w-full h-full object-contain"
       />
     </div>

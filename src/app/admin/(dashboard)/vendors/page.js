@@ -173,7 +173,11 @@ export default function VendorsPage() {
       toast.success("Vendor removed from master registry.");
       setDeleteConfirmOpen(false);
       setvendorToDelete(null);
-      fetchData();
+      if (vendors.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        fetchData();
+      }
     } catch (error) {
       console.error(error);
       toast.error("Error removing vendor from registry.");
@@ -383,7 +387,7 @@ export default function VendorsPage() {
             variant="outline"
             size="sm"
             onClick={() => handleShowDetails(row)}
-            className="h-8 text-xs font-bold text-sky-400 border-sky-500/30 hover:bg-sky-500/10 hover:text-sky-300 rounded-lg gap-1 px-2.5 transition-colors"
+            className="h-8 text-xs font-semibold text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded-lg gap-1.5 px-2.5 transition-colors"
             title="Show details"
           >
             <Eye className="h-3.5 w-3.5" />
@@ -393,7 +397,7 @@ export default function VendorsPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleEditClick(row)}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
             title="Edit Vendor"
           >
             <Edit className="h-4 w-4" />
@@ -402,7 +406,7 @@ export default function VendorsPage() {
             variant="ghost"
             size="icon"
             onClick={() => promptDeleteVendor(row.id)}
-            className="h-8 w-8 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
             title="Delete Vendor"
           >
             <Trash2 className="h-4 w-4" />
@@ -812,9 +816,9 @@ export default function VendorsPage() {
 
       {/* Dialog 2: View Detailed Vendor Profile */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="lg:max-w-2xl p-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card">
+        <DialogContent className="lg:max-w-2xl p-0 gap-0 overflow-hidden border border-border/50 shadow-2xl rounded-3xl bg-card flex flex-col">
           {selectedVendor && (
-            <div>
+            <div className="flex flex-col w-full overflow-hidden rounded-3xl">
               {/* Header block */}
               <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
                 <div className="flex items-center gap-4">

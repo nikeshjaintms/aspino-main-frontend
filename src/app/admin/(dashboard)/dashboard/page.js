@@ -90,28 +90,32 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [passRes, supplierRes, catRes, bankRes] = await Promise.all([
-          fetch(`${backendUrl}/gate-pass?limit=1000`),
-          fetch(`${backendUrl}/supplier`),
-          fetch(`${backendUrl}/pass-category`),
-          fetch(`${backendUrl}/bank`),
+          fetch(`${backendUrl}/gate-pass?limit=1000`).catch(() => null),
+          fetch(`${backendUrl}/supplier`).catch(() => null),
+          fetch(`${backendUrl}/pass-category`).catch(() => null),
+          fetch(`${backendUrl}/bank`).catch(() => null),
         ]);
 
-        const [passData, supplierData, catData, bankData] = await Promise.all([
-          passRes.json(),
-          supplierRes.json(),
-          catRes.json(),
-          bankRes.json(),
-        ]);
+        const passData = passRes && passRes.ok ? await passRes.json().catch(() => ({})) : {};
+        const supplierData = supplierRes && supplierRes.ok ? await supplierRes.json().catch(() => ([])) : [];
+        const catData = catRes && catRes.ok ? await catRes.json().catch(() => ([])) : [];
+        const bankData = bankRes && bankRes.ok ? await bankRes.json().catch(() => ([])) : [];
 
-        setGatePasses(passData.data || []);
+        const gatePassList = Array.isArray(passData?.data)
+          ? passData.data
+          : Array.isArray(passData)
+          ? passData
+          : [];
+
+        setGatePasses(gatePassList);
         setGatePassStats({
-          total: passData.total || 0,
-          totalInward: passData.totalInward || 0,
-          totalOutward: passData.totalOutward || 0,
+          total: passData?.total ?? gatePassList.length,
+          totalInward: passData?.totalInward ?? gatePassList.filter((p) => p?.type === "INWARD").length,
+          totalOutward: passData?.totalOutward ?? gatePassList.filter((p) => p?.type === "OUTWARD").length,
         });
-        setSuppliers(supplierData || []);
-        setCategories(catData || []);
-        setBanks(bankData || []);
+        setSuppliers(Array.isArray(supplierData) ? supplierData : Array.isArray(supplierData?.data) ? supplierData.data : []);
+        setCategories(Array.isArray(catData) ? catData : Array.isArray(catData?.data) ? catData.data : []);
+        setBanks(Array.isArray(bankData) ? bankData : Array.isArray(bankData?.data) ? bankData.data : []);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
       } finally {
@@ -139,6 +143,11 @@ export default function AdminDashboard() {
     );
   }
 
+  const safeGatePasses = Array.isArray(gatePasses) ? gatePasses : [];
+  const safeSuppliers = Array.isArray(suppliers) ? suppliers : [];
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const safeBanks = Array.isArray(banks) ? banks : [];
+
   // Process monthly pass chart data
   const getMonthlyPassData = () => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -152,8 +161,10 @@ export default function AdminDashboard() {
       counts[monthName] = { name: monthName, inward: 0, outward: 0 };
     }
     
-    gatePasses.forEach(pass => {
+    safeGatePasses.forEach((pass) => {
+      if (!pass) return;
       const date = new Date(pass.timeIn || pass.createdAt);
+      if (isNaN(date.getTime())) return;
       const monthName = months[date.getMonth()];
       if (counts[monthName]) {
         if (pass.type === "INWARD") counts[monthName].inward++;
@@ -167,7 +178,8 @@ export default function AdminDashboard() {
   // Process category distribution chart data
   const getCategoryDistribution = () => {
     const counts = {};
-    gatePasses.forEach(pass => {
+    safeGatePasses.forEach((pass) => {
+      if (!pass) return;
       const catName = pass.category?.name || "Uncategorized";
       counts[catName] = (counts[catName] || 0) + 1;
     });
@@ -190,21 +202,21 @@ export default function AdminDashboard() {
     const now = new Date();
     
     // 1. Overstay Warning
-    const overstayVehicles = gatePasses.filter(pass => {
-      if (pass.status !== "GATE_IN") return false;
+    const overstayVehicles = safeGatePasses.filter((pass) => {
+      if (pass?.status !== "GATE_IN") return false;
       const timeDiff = now - new Date(pass.timeIn);
       return timeDiff > 4 * 60 * 60 * 1000;
     });
-    overstayVehicles.forEach(pass => {
+    overstayVehicles.forEach((pass) => {
       alertsList.push({
         type: "danger",
-        message: `Vehicle ${pass.vehicleNumber} (${pass.driverName}) has been inside for over 4 hours`,
+        message: `Vehicle ${pass.vehicleNumber || "Unknown"} (${pass.driverName || "Driver"}) has been inside for over 4 hours`,
         time: "Overstay Alert",
       });
     });
     
     // 2. Vehicles currently inside
-    const activeInside = gatePasses.filter(pass => pass.status === "GATE_IN").length;
+    const activeInside = safeGatePasses.filter((pass) => pass?.status === "GATE_IN").length;
     if (activeInside > 0) {
       alertsList.push({
         type: "info",
@@ -214,7 +226,7 @@ export default function AdminDashboard() {
     }
     
     // 3. Inward passes missing PO / GRN
-    const missingPo = gatePasses.filter(pass => pass.type === "INWARD" && !pass.poNumber).length;
+    const missingPo = safeGatePasses.filter((pass) => pass?.type === "INWARD" && !pass?.poNumber).length;
     if (missingPo > 0) {
       alertsList.push({
         type: "warning",
@@ -238,7 +250,10 @@ export default function AdminDashboard() {
   const revenueData = getMonthlyPassData();
   const inventoryData = getCategoryDistribution();
   const alerts = getDynamicAlerts();
-  const recentOrders = gatePasses.slice(0, 5); // top 5 recent gate passes
+  const recentOrders = safeGatePasses.slice(0, 5); // top 5 recent gate passes
+
+  const totalPasses = gatePassStats?.total ?? safeGatePasses.length ?? 0;
+  const inwardPasses = gatePassStats?.totalInward ?? safeGatePasses.filter((p) => p?.type === "INWARD").length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -255,17 +270,17 @@ export default function AdminDashboard() {
                 variant="secondary"
                 className="bg-white/15 text-white border-white/20 text-xs font-semibold"
               >
-                {user.role || "Admin"}
+                {user?.role || "Admin"}
               </Badge>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold">
-              {greeting}, {user.name || "Aspino Admin"}! 👋
+              {greeting}, {user?.name || "Aspino Admin"}! 👋
             </h2>
             <p className="text-white/70 text-sm sm:text-base max-w-lg">
               Here&apos;s what&apos;s happening across your digital gate pass
               operations today. You have{" "}
               <span className="text-white font-semibold font-black">
-                {gatePasses.filter(p => p.status === "GATE_IN").length} active vehicles
+                {safeGatePasses.filter((p) => p?.status === "GATE_IN").length} active vehicles
               </span>{" "}
               inside the premises to monitor.
             </p>
@@ -289,8 +304,8 @@ export default function AdminDashboard() {
         <div className="animate-fade-in-up" style={{ animationDelay: "0ms" }}>
           <StatCard
             title="Digital Gate Passes"
-            value={gatePassStats.total.toLocaleString()}
-            change={gatePassStats.total > 0 ? Number(((gatePassStats.totalInward / gatePassStats.total) * 100).toFixed(1)) : 0}
+            value={totalPasses.toLocaleString()}
+            change={totalPasses > 0 ? Number(((inwardPasses / totalPasses) * 100).toFixed(1)) : 0}
             changeLabel="% Inward Passes"
             icon={ClipboardList}
             variant="blue"
@@ -299,7 +314,7 @@ export default function AdminDashboard() {
         <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
           <StatCard
             title="Active Suppliers"
-            value={suppliers.length.toLocaleString()}
+            value={safeSuppliers.length.toLocaleString()}
             change={100}
             changeLabel="Approval rate"
             icon={Truck}
@@ -309,8 +324,8 @@ export default function AdminDashboard() {
         <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
           <StatCard
             title="Pass Categories"
-            value={categories.length.toLocaleString()}
-            change={categories.filter(c => c.isActive).length}
+            value={safeCategories.length.toLocaleString()}
+            change={safeCategories.filter((c) => c?.isActive).length}
             changeLabel="Active categories"
             icon={Tags}
             variant="amber"
@@ -319,8 +334,8 @@ export default function AdminDashboard() {
         <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <StatCard
             title="Registered Banks"
-            value={banks.length.toLocaleString()}
-            change={banks.filter(b => b.isActive).length}
+            value={safeBanks.length.toLocaleString()}
+            change={safeBanks.filter((b) => b?.isActive).length}
             changeLabel="Active banks"
             icon={Building2}
             variant="green"

@@ -371,7 +371,7 @@ export default function UomMasterPage() {
               variant="ghost"
               size="icon"
               onClick={() => handleOpenEdit(item)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
               title="Edit UOM"
             >
               <Edit className="h-4 w-4" />
@@ -380,7 +380,7 @@ export default function UomMasterPage() {
               variant="ghost"
               size="icon"
               onClick={() => handleDeleteClick(item)}
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
               title="Delete UOM"
             >
               <Trash2 className="h-4 w-4" />

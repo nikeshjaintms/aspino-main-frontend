@@ -1350,7 +1350,7 @@ export default function GatePassPage() {
                             }}
                             className="text-[11px] font-bold text-purple-700 dark:text-purple-300 hover:underline cursor-pointer flex items-center gap-1"
                           >
-                            🚶 Set "WALKING" (Pedestrian)
+                            🚶 Set &quot;WALKING&quot; (Pedestrian)
                           </button>
                         </div>
                         <div className="relative">

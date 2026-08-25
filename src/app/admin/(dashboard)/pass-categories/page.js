@@ -281,7 +281,7 @@ export default function PassCategoriesPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleEdit(row)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
             title="Edit"
           >
             <Edit className="h-4 w-4" />
@@ -290,7 +290,7 @@ export default function PassCategoriesPage() {
             variant="ghost"
             size="icon"
             onClick={() => promptDeleteCat(row)}
-            className="h-8 w-8 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
+            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
             title="Delete"
           >
             <Trash2 className="h-4 w-4" />

@@ -599,18 +599,19 @@ export default function PackingMaterialsPage() {
         return (
           <div className="flex items-center gap-1">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="View Details"
+              variant="outline"
+              size="sm"
               onClick={() => handleOpenView(mat)}
+              className="h-8 text-xs font-semibold text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded-lg gap-1.5 px-2.5 transition-colors"
+              title="Show details"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-3.5 w-3.5" />
+              Show
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50"
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
               title="Edit Material"
               onClick={() => handleOpenEdit(mat)}
             >
@@ -619,7 +620,7 @@ export default function PackingMaterialsPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
               title="Delete Material"
               onClick={() => {
                 setMaterialToDelete(mat);
