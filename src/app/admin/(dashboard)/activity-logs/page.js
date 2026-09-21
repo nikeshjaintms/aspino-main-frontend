@@ -19,6 +19,7 @@ import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
 import { customToast } from "@/components/custom-toast";
 import { DatePicker } from "@/components/ui/date-picker";
+import { RouteGuard } from "@/context/PermissionContext";
 import {
   Activity,
   Search,
@@ -35,6 +36,14 @@ import {
 } from "lucide-react";
 
 export default function ActivityLogsPage() {
+  return (
+    <RouteGuard subject="audit" action="read">
+      <ActivityLogsContent />
+    </RouteGuard>
+  );
+}
+
+function ActivityLogsContent() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState(null);

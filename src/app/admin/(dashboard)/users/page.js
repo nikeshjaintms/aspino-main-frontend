@@ -30,8 +30,17 @@ import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { fetchUsers, createUser, updateUser, deleteUser, clearError } from "@/redux/slices/usersSlice";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RouteGuard } from "@/context/PermissionContext";
 
 export default function UsersPage() {
+  return (
+    <RouteGuard subject="users" action="read">
+      <UsersPageContent />
+    </RouteGuard>
+  );
+}
+
+function UsersPageContent() {
   const dispatch = useDispatch();
   const { users, loading, submitting, error } = useSelector((state) => state.users);
 
@@ -53,7 +62,11 @@ export default function UsersPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("USER");
+  const [roleId, setRoleId] = useState("");
+
+  // Roles state (loaded from backend)
+  const [roles, setRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
 
   // Validation States
   const [formError, setFormError] = useState("");
@@ -62,6 +75,47 @@ export default function UsersPage() {
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setRolesLoading(true);
+      try {
+        // Reuse the same auth headers pattern as usersSlice
+        let token = null;
+        if (typeof document !== "undefined") {
+          const value = `; ${document.cookie}`;
+          const adminParts = value.split(`; adminToken=`);
+          if (adminParts.length === 2) token = adminParts.pop().split(";").shift();
+          if (!token) {
+            const userParts = value.split(`; userToken=`);
+            if (userParts.length === 2) token = userParts.pop().split(";").shift();
+          }
+        }
+        if (!token && typeof window !== "undefined") {
+          token = localStorage.getItem("adminToken") || localStorage.getItem("userToken");
+        }
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const res = await fetch(`${backendUrl}/roles`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data) ? data : (data.data || []);
+          setRoles(list);
+          if (list.length > 0 && !roleId) setRoleId(list[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch roles:", err);
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+    fetchRoles();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -73,14 +127,18 @@ export default function UsersPage() {
 
   // Filter and paginate locally since backend returns all users currently
   const filteredUsers = users.filter((u) => 
-    u.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-    u.email.toLowerCase().includes(debouncedSearch.toLowerCase())
+    (u.name || "").toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+    (u.email || "").toLowerCase().includes(debouncedSearch.toLowerCase())
   );
   
   const totalCount = filteredUsers.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const totalAdmins = users.filter((u) => u.role === "ADMIN").length;
+  // Count users with elevated (non-standard) roles
+  const totalAdmins = users.filter((u) => {
+    const roleName = (u.roleRelation?.name || u.role || "").toUpperCase();
+    return roleName === "ADMIN" || roleName === "SUPER_ADMIN";
+  }).length;
 
   useEffect(() => {
     if (error) {
@@ -94,17 +152,17 @@ export default function UsersPage() {
       setName("");
       setEmail("");
       setPassword("");
-      setRole("USER");
+      setRoleId(roles[0]?.id || "");
       setFormError("");
       setFieldErrors({});
     }
-  }, [formDialogOpen, editingUser]);
+  }, [formDialogOpen, editingUser, roles]);
 
   const resetForm = () => {
     setName("");
     setEmail("");
     setPassword("");
-    setRole("USER");
+    setRoleId(roles[0]?.id || "");
     setFormError("");
     setFieldErrors({});
   };
@@ -120,7 +178,7 @@ export default function UsersPage() {
     setName(user.name);
     setEmail(user.email);
     setPassword(""); // Leave empty unless changing
-    setRole(user.role);
+    setRoleId(user.roleId || user.roleRelation?.id || roles[0]?.id || "");
     setFormDialogOpen(true);
   };
 
@@ -161,7 +219,7 @@ export default function UsersPage() {
     const payload = {
       name: name.trim(),
       email: email.trim(),
-      role,
+      roleId: roleId || undefined,
     };
     if (password) payload.password = password;
 
@@ -199,18 +257,24 @@ export default function UsersPage() {
     {
       accessorKey: "role",
       header: "Role",
-      cell: (row) => (
-        <Badge
-          variant="outline"
-          className={`font-bold text-[10px] px-2 py-0.5 ${
-            row.role === "ADMIN"
-              ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/50"
-              : "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-          }`}
-        >
-          {row.role}
-        </Badge>
-      ),
+      cell: (row) => {
+        const displayName = row.roleRelation?.displayName || row.roleRelation?.name || row.role || "—";
+        const roleName = (row.roleRelation?.name || row.role || "").toUpperCase();
+        return (
+          <Badge
+            variant="outline"
+            className={`font-bold text-[10px] px-2 py-0.5 ${
+              roleName === "SUPER_ADMIN"
+                ? "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50"
+                : roleName === "ADMIN"
+                ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/50"
+                : "bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+            }`}
+          >
+            {displayName}
+          </Badge>
+        );
+      },
     },
     {
       id: "actions",
@@ -422,13 +486,19 @@ export default function UsersPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="user-role" className="text-xs font-bold text-slate-700 dark:text-slate-300">Role</Label>
-                <Select value={role} onValueChange={setRole}>
+                <Select value={roleId} onValueChange={setRoleId} disabled={rolesLoading}>
                   <SelectTrigger className="w-full text-xs h-10 rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select a role"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USER">User (Standard Access)</SelectItem>
-                    <SelectItem value="ADMIN">Administrator (Full Access)</SelectItem>
+                    {roles.length === 0 && !rolesLoading && (
+                      <SelectItem value="" disabled>No roles available</SelectItem>
+                    )}
+                    {roles.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.displayName || r.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

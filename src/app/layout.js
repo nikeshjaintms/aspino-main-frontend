@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider } from "@/redux/provider";
+import { PermissionProvider } from "@/context/PermissionContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -41,9 +42,11 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
-            <TooltipProvider delayDuration={0}>
-              {children}
-            </TooltipProvider>
+            <PermissionProvider>
+              <TooltipProvider delayDuration={0}>
+                {children}
+              </TooltipProvider>
+            </PermissionProvider>
             <Toaster richColors position="top-right" />
           </ThemeProvider>
         </StoreProvider>

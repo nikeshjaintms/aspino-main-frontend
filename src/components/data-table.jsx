@@ -45,6 +45,7 @@ export function DataTable({
   emptyDescription = "There are no records to display.",
   onRowClick,
   actions,
+  showSrNo = true,
   // Server-side pagination & search props
   isServerSide = false,
   totalCount = 0,
@@ -64,11 +65,51 @@ export function DataTable({
   const activeCurrentPage = isServerSide ? currentPage : localCurrentPage;
   const activeRowsPerPage = isServerSide ? pageSize : localRowsPerPage;
 
+  // Effective columns with Sr No.
+  const effectiveColumns = useMemo(() => {
+    if (showSrNo === false) return columns;
+    const hasSrNo = columns.some(
+      (c) =>
+        c.accessorKey === "srNo" ||
+        c.accessorKey === "serialNo" ||
+        c.accessorKey === "_srNo" ||
+        c.id === "srNo" ||
+        c.id === "_srNo" ||
+        (typeof c.header === "string" && c.header.toLowerCase().includes("sr"))
+    );
+    if (hasSrNo) return columns;
+
+    const srNoCol = {
+      id: "_srNo",
+      header: "Sr No.",
+      sortable: false,
+      headerClassName: "w-16 text-center",
+      className: "w-16 text-center",
+      cell: (rowObj, meta) => {
+        const pageOffset = (activeCurrentPage - 1) * activeRowsPerPage;
+        const rowIndex =
+          typeof meta?.index === "number"
+            ? meta.index
+            : typeof rowObj?.index === "number"
+            ? rowObj.index
+            : 0;
+        return (
+          <span className="font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {pageOffset + rowIndex + 1}
+          </span>
+        );
+      },
+    };
+
+    return [srNoCol, ...columns];
+  }, [columns, showSrNo, activeCurrentPage, activeRowsPerPage]);
+
   const filteredData = useMemo(() => {
     if (isServerSide) return data;
     if (!activeSearchQuery) return data;
     return data.filter((row) =>
       columns.some((col) => {
+        if (!col.accessorKey) return false;
         const value = row[col.accessorKey];
         if (value == null) return false;
         return String(value).toLowerCase().includes(activeSearchQuery.toLowerCase());
@@ -101,7 +142,7 @@ export function DataTable({
   }, [sortedData, activeCurrentPage, activeRowsPerPage, isServerSide, data]);
 
   const handleSort = (key) => {
-    if (isServerSide) return;
+    if (isServerSide || !key) return;
     setSortConfig((prev) => {
       if (prev.key === key) {
         if (prev.direction === "asc") return { key, direction: "desc" };
@@ -128,7 +169,7 @@ export function DataTable({
           <div className="p-0">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-6 py-4 border-b last:border-0">
-                {columns.map((_, j) => (
+                {effectiveColumns.map((_, j) => (
                   <Skeleton key={j} className="h-5 flex-1" />
                 ))}
               </div>
@@ -174,15 +215,17 @@ export function DataTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              {columns.map((col) => (
+              {effectiveColumns.map((col) => (
                 <TableHead
                   key={col.accessorKey || col.id}
-                  className={`font-semibold text-xs uppercase tracking-wider text-muted-foreground ${
-                    col.sortable !== false && !isServerSide ? "cursor-pointer select-none hover:text-foreground transition-colors" : ""
+                  className={`font-semibold text-xs uppercase tracking-wider text-muted-foreground ${col.headerClassName || ""} ${
+                    col.sortable !== false && !isServerSide && col.accessorKey
+                      ? "cursor-pointer select-none hover:text-foreground transition-colors"
+                      : ""
                   }`}
-                  onClick={() => col.sortable !== false && !isServerSide && handleSort(col.accessorKey)}
+                  onClick={() => col.sortable !== false && !isServerSide && col.accessorKey && handleSort(col.accessorKey)}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className={`flex items-center gap-1.5 ${col.headerClassName?.includes("text-center") ? "justify-center" : ""}`}>
                     {col.header}
                     {col.sortable !== false && !isServerSide && col.accessorKey && getSortIcon(col.accessorKey)}
                   </div>
@@ -193,7 +236,7 @@ export function DataTable({
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-48">
+                <TableCell colSpan={effectiveColumns.length} className="h-48">
                   <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
                     <div className="rounded-full bg-muted p-4">
                       <PackageOpen className="h-8 w-8 text-muted-foreground/60" />
@@ -214,18 +257,25 @@ export function DataTable({
                   }`}
                   onClick={() => onRowClick?.(row)}
                 >
-                  {columns.map((col) => {
+                  {effectiveColumns.map((col) => {
                     const rowObj = {
                       ...row,
+                      index: i,
                       original: row,
-                      row: { original: row, ...row },
-                      getValue: () => row[col.accessorKey],
+                      row: { original: row, index: i, ...row },
+                      getValue: () => (col.accessorKey ? row[col.accessorKey] : undefined),
                     };
                     return (
-                      <TableCell key={col.accessorKey || col.id} className="py-3.5">
+                      <TableCell key={col.accessorKey || col.id} className={`py-3.5 ${col.className || ""}`}>
                         {col.cell
-                          ? col.cell(rowObj, { row: { original: row, ...row }, getValue: () => row[col.accessorKey] })
-                          : row[col.accessorKey]}
+                          ? col.cell(rowObj, {
+                              row: { original: row, index: i, ...row },
+                              index: i,
+                              getValue: () => (col.accessorKey ? row[col.accessorKey] : undefined),
+                            })
+                          : col.accessorKey
+                          ? row[col.accessorKey]
+                          : ""}
                       </TableCell>
                     );
                   })}

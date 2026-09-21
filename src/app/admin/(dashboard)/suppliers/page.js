@@ -51,6 +51,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { RouteGuard } from "@/context/PermissionContext";
 import Link from "next/link";
 import { generateSupplierCode } from "@/lib/code-generator";
 
@@ -83,6 +84,14 @@ function StarRating({ value, onChange, disabled = false }) {
 }
 
 export default function SuppliersPage() {
+  return (
+    <RouteGuard subject="supplier" action="read">
+      <SuppliersPageContent />
+    </RouteGuard>
+  );
+}
+
+function SuppliersPageContent() {
   const [suppliers, setSuppliers] = useState([]);
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);

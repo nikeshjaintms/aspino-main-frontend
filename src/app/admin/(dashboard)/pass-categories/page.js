@@ -305,7 +305,7 @@ export default function PassCategoriesPage() {
       variant="outline"
       size="icon"
       onClick={() => dispatch(fetchCategories({ search: debouncedSearch, page: currentPage, limit: pageSize, type: activeTab }))}
-      className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850"
+      className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
       title="Refresh"
     >
       <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -396,7 +396,7 @@ export default function PassCategoriesPage() {
 
       {/* Main Categories Card & Table */}
       <Card className="border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Gate Pass Category Master</CardTitle>
             <CardDescription className="text-xs">Filter, search, sort, and manage pass categories</CardDescription>
@@ -408,7 +408,7 @@ export default function PassCategoriesPage() {
             setActiveTab(val);
             setCurrentPage(1);
           }} className="w-full">
-            <div className="px-4 pt-3 border-b border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="px-4 pt-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row items-center justify-between gap-2">
               <TabsList className="bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl">
                 <TabsTrigger value="all" className="text-xs font-bold px-4 rounded-lg">
                   All Categories ({totalCount})
@@ -628,7 +628,7 @@ export default function PassCategoriesPage() {
               </div>
 
               {/* Status Switch Toggle */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800">
                 <div className="space-y-0.5">
                   <Label htmlFor="category-status-switch" className="text-xs font-bold text-slate-700 dark:text-slate-300">Active Status</Label>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400">Allow this category to be selected for gate passes when active</p>

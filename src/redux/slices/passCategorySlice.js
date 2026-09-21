@@ -1,6 +1,25 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+function getAuthHeaders() {
+  let token = null;
+  if (typeof document !== "undefined") {
+    const value = `; ${document.cookie}`;
+    const adminParts = value.split(`; adminToken=`);
+    if (adminParts.length === 2) token = adminParts.pop().split(";").shift();
+    if (!token) {
+      const userParts = value.split(`; userToken=`);
+      if (userParts.length === 2) token = userParts.pop().split(";").shift();
+    }
+  }
+  if (!token && typeof window !== "undefined") {
+    token = localStorage.getItem("adminToken") || localStorage.getItem("userToken");
+  }
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
 // Async Thunks for Pass Categories
 export const fetchCategories = createAsyncThunk(
@@ -13,7 +32,7 @@ export const fetchCategories = createAsyncThunk(
       if (page) url += `&page=${page}`;
       if (limit) url += `&limit=${limit}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch categories");
       return await res.json();
     } catch (err) {
@@ -28,7 +47,7 @@ export const createCategory = createAsyncThunk(
     try {
       const res = await fetch(`${backendUrl}/pass-category`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(catData),
       });
       const data = await res.json();

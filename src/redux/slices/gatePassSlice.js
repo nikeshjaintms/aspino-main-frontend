@@ -1,6 +1,25 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+function getAuthHeaders() {
+  let token = null;
+  if (typeof document !== "undefined") {
+    const value = `; ${document.cookie}`;
+    const adminParts = value.split(`; adminToken=`);
+    if (adminParts.length === 2) token = adminParts.pop().split(";").shift();
+    if (!token) {
+      const userParts = value.split(`; userToken=`);
+      if (userParts.length === 2) token = userParts.pop().split(";").shift();
+    }
+  }
+  if (!token && typeof window !== "undefined") {
+    token = localStorage.getItem("adminToken") || localStorage.getItem("userToken");
+  }
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
 // Async Thunks
 export const fetchGatePasses = createAsyncThunk(
@@ -10,7 +29,8 @@ export const fetchGatePasses = createAsyncThunk(
       const { search = "", page = 1, limit = 10, type = "all" } = params;
       const typeParam = type.toUpperCase();
       const res = await fetch(
-        `${backendUrl}/gate-pass?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}&type=${typeParam}`
+        `${backendUrl}/gate-pass?search=${encodeURIComponent(search)}&page=${page}&limit=${limit}&type=${typeParam}`,
+        { headers: getAuthHeaders() }
       );
       if (!res.ok) throw new Error("Failed to fetch gate passes");
       return await res.json();
@@ -26,7 +46,7 @@ export const createGatePass = createAsyncThunk(
     try {
       const res = await fetch(`${backendUrl}/gate-pass`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(passData),
       });
       const data = await res.json();

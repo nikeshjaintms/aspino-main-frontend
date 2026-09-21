@@ -1,14 +1,45 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+
+function getAuthHeaders() {
+  let token = null;
+  if (typeof document !== "undefined") {
+    const value = `; ${document.cookie}`;
+    const adminParts = value.split(`; adminToken=`);
+    if (adminParts.length === 2) {
+      token = adminParts.pop().split(";").shift();
+    }
+    if (!token) {
+      const userParts = value.split(`; userToken=`);
+      if (userParts.length === 2) {
+        token = userParts.pop().split(";").shift();
+      }
+    }
+  }
+  if (!token && typeof window !== "undefined") {
+    token = localStorage.getItem("adminToken") || localStorage.getItem("userToken");
+  }
+
+  const headers = { "Content-Type": "application/json" };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 // Async Thunks
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${backendUrl}/users`);
-      if (!res.ok) throw new Error("Failed to fetch users");
+      const res = await fetch(`${backendUrl}/users`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to fetch users");
+      }
       return await res.json();
     } catch (err) {
       return rejectWithValue(err.message);
@@ -22,7 +53,7 @@ export const createUser = createAsyncThunk(
     try {
       const res = await fetch(`${backendUrl}/users`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       });
       const data = await res.json();
@@ -43,7 +74,7 @@ export const updateUser = createAsyncThunk(
     try {
       const res = await fetch(`${backendUrl}/users/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(userData),
       });
       const data = await res.json();
@@ -64,6 +95,7 @@ export const deleteUser = createAsyncThunk(
     try {
       const res = await fetch(`${backendUrl}/users/${id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -53,31 +53,31 @@ export default function AdminLoginPage() {
   const roleConfigs = [
     {
       id: "admin",
-      label: "Admin",
+      label: "Super Admin",
       icon: ShieldCheck,
       demoEmail: "admin@aspino.com",
       demoPass: "admin123",
     },
     {
-      id: "user",
-      label: "User",
+      id: "security",
+      label: "Security Officer",
+      icon: Shield,
+      demoEmail: "security@aspino.com",
+      demoPass: "security123",
+    },
+    {
+      id: "employee",
+      label: "Employee",
       icon: UserCheck,
-      demoEmail: "user@aspino.com",
-      demoPass: "user123",
+      demoEmail: "employee@aspino.com",
+      demoPass: "employee123",
     },
     {
-      id: "sales",
-      label: "Sales",
-      icon: TrendingUp,
-      demoEmail: "sales@aspino.com",
-      demoPass: "sales123",
-    },
-    {
-      id: "vendor",
-      label: "Vendor",
+      id: "hr",
+      label: "HR Manager",
       icon: Building2,
-      demoEmail: "vendor@aspino.com",
-      demoPass: "vendor123",
+      demoEmail: "hr@aspino.com",
+      demoPass: "Hr@123",
     },
   ];
 
@@ -111,8 +111,8 @@ export default function AdminLoginPage() {
     if (!password) {
       setPasswordError("Password is required.");
       isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters long.");
+    } else if (password.length < 4) {
+      setPasswordError("Password must be at least 4 characters long.");
       isValid = false;
     }
 
@@ -128,16 +128,10 @@ export default function AdminLoginPage() {
       return;
     }
 
-    // Role-specific credential validation check
-    if (selectedRole !== "admin") {
-      setApiError(`Invalid login: You cannot use credentials under the '${selectedRole.toUpperCase()}' role selection on this Admin Portal. Please select the 'Admin' role.`);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const response = await fetch(`${backendUrl}/auth/admin/login`, {
         method: "POST",
         headers: {
@@ -173,7 +167,7 @@ export default function AdminLoginPage() {
 
       setTimeout(() => {
         router.push("/admin/dashboard");
-      }, 800);
+      }, 500);
     } catch (err) {
       setApiError(err.message || "Unable to connect to the backend server.");
     } finally {
@@ -205,7 +199,7 @@ export default function AdminLoginPage() {
     setForgotLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const res = await fetch(`${backendUrl}/auth/admin/forgot-password`, {
         method: "POST",
         headers: {

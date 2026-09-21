@@ -338,3 +338,51 @@ export function generateStorageLocationCode(storeType, locationName) {
   return `${prefix}-${locTag}`;
 }
 
+/**
+ * Generate Chart of Accounts / GL Account Code
+ * Examples:
+ * - Type: "ASSET", Name: "Petty Cash", Group: "Cash & Cash Equivalents" -> "GL-AST-1010"
+ * - Type: "LIABILITY", Name: "Trade Payables" -> "GL-LIB-2010"
+ * - Type: "EQUITY", Name: "Retained Earnings" -> "GL-EQU-3010"
+ * - Type: "REVENUE", Name: "Domestic Pharma Sales" -> "GL-REV-4010"
+ * - Type: "EXPENSE", Name: "Plant Maintenance & Utilities" -> "GL-EXP-5010"
+ */
+export function generateAccountCode(name, type = "ASSET", group = "") {
+  let typePrefix = "AST";
+  let baseNumber = "1000";
+
+  switch (type?.toUpperCase()) {
+    case "ASSET":
+      typePrefix = "AST";
+      baseNumber = "10";
+      break;
+    case "LIABILITY":
+      typePrefix = "LIB";
+      baseNumber = "20";
+      break;
+    case "EQUITY":
+      typePrefix = "EQU";
+      baseNumber = "30";
+      break;
+    case "REVENUE":
+    case "INCOME":
+      typePrefix = "REV";
+      baseNumber = "40";
+      break;
+    case "EXPENSE":
+      typePrefix = "EXP";
+      baseNumber = "50";
+      break;
+    default:
+      typePrefix = "ACC";
+      baseNumber = "60";
+  }
+
+  if (!name || !name.trim()) {
+    return `GL-${typePrefix}-${baseNumber}01`;
+  }
+
+  const tag = extractLettersCode(name, 3);
+  return `GL-${typePrefix}-${tag || `${baseNumber}01`}`;
+}
+

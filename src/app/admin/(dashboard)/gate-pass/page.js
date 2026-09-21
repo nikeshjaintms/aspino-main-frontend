@@ -75,10 +75,18 @@ import { DataTable } from "@/components/data-table";
 import * as OCR from "@/lib/vehicleOCR";
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { RouteGuard } from "@/context/PermissionContext";
 import Image from "next/image";
 
-
 export default function GatePassPage() {
+  return (
+    <RouteGuard subject="gatepass" action="read">
+      <GatePassPageContent />
+    </RouteGuard>
+  );
+}
+
+function GatePassPageContent() {
   const dispatch = useDispatch();
 
   // Redux States
@@ -951,7 +959,7 @@ export default function GatePassPage() {
       variant="outline"
       size="icon"
       onClick={() => dispatch(fetchGatePasses({ search, page: currentPage, limit, type: activeTab }))}
-      className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-805 hover:bg-slate-100 dark:hover:bg-slate-850"
+      className="h-9 w-9 rounded-xl text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
       title="Refresh"
     >
       <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -983,7 +991,7 @@ export default function GatePassPage() {
 
       {/* Main Gate Pass Table & Filters */}
       <Card className="border-slate-200 dark:border-slate-800 shadow-md bg-white dark:bg-slate-900">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Daily Gate Register & Movement History</CardTitle>
             <CardDescription className="text-xs">Filter, search, sort, and manage material movements</CardDescription>
@@ -992,7 +1000,7 @@ export default function GatePassPage() {
 
         <CardContent className="p-0 bg-transparent">
           <Tabs value={activeTab} onValueChange={(val) => dispatch(setActiveTab(val))} className="w-full">
-            <div className="px-4 pt-3 border-b border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="px-4 pt-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col sm:flex-row items-center justify-between gap-2">
               <TabsList className="bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl">
                 <TabsTrigger value="all" className="text-xs font-bold px-4 rounded-lg">
                   All Movements ({totalCount})
