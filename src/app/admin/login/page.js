@@ -28,16 +28,15 @@ import {
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@aspino.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [selectedRole, setSelectedRole] = useState("admin");
   const [loading, setLoading] = useState(false);
 
   // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("admin@aspino.com");
+  const [forgotEmail, setForgotEmail] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -49,46 +48,6 @@ export default function AdminLoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const [apiError, setApiError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
-  const roleConfigs = [
-    {
-      id: "admin",
-      label: "Super Admin",
-      icon: ShieldCheck,
-      demoEmail: "admin@aspino.com",
-      demoPass: "admin123",
-    },
-    {
-      id: "security",
-      label: "Security Officer",
-      icon: Shield,
-      demoEmail: "security@aspino.com",
-      demoPass: "security123",
-    },
-    {
-      id: "employee",
-      label: "Employee",
-      icon: UserCheck,
-      demoEmail: "employee@aspino.com",
-      demoPass: "employee123",
-    },
-    {
-      id: "hr",
-      label: "HR Manager",
-      icon: Building2,
-      demoEmail: "hr@aspino.com",
-      demoPass: "Hr@123",
-    },
-  ];
-
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role.id);
-    setEmail(role.demoEmail);
-    setPassword(role.demoPass);
-    setEmailError("");
-    setPasswordError("");
-    setApiError("");
-  };
 
   // Real-time validation
   const validateForm = () => {
@@ -149,7 +108,7 @@ export default function AdminLoginPage() {
         throw new Error(data.message || "Invalid email or password");
       }
 
-      // Store Auth Token and User Details in Cookies (not localStorage)
+      // Store Auth Token and User Details in Cookies and localStorage
       if (typeof window !== "undefined") {
         const token = data.access_token;
         const userObj = JSON.stringify(data.admin || data.user);
@@ -158,16 +117,15 @@ export default function AdminLoginPage() {
         document.cookie = `adminToken=${token}; path=/; max-age=86400; SameSite=Lax`;
         document.cookie = `adminUser=${encodeURIComponent(userObj)}; path=/; max-age=86400; SameSite=Lax`;
 
-        // Clear any old localStorage entries
-        localStorage.removeItem("adminToken");
-        localStorage.removeItem("adminUser");
+        localStorage.setItem("adminToken", token);
+        localStorage.setItem("adminUser", userObj);
       }
 
       setSuccessMsg("Login successful! Redirecting to Dashboard...");
 
       setTimeout(() => {
-        router.push("/admin/dashboard");
-      }, 500);
+        window.location.href = "/admin/dashboard";
+      }, 400);
     } catch (err) {
       setApiError(err.message || "Unable to connect to the backend server.");
     } finally {
@@ -330,7 +288,7 @@ export default function AdminLoginPage() {
               </div>
               <div className="space-y-0.5">
                 <h2 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">
-                  Secure Admin Access
+                  Secure Portal Access
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium">
                   Enter your enterprise credentials
@@ -361,7 +319,7 @@ export default function AdminLoginPage() {
               {/* Email Address */}
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-xs sm:text-sm font-bold text-slate-700">
-                  Admin Email Address
+                  Email Address
                 </Label>
                 <div className="relative flex items-center">
                   <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -373,7 +331,7 @@ export default function AdminLoginPage() {
                       setEmail(e.target.value);
                       if (emailError) setEmailError("");
                     }}
-                    placeholder="admin@aspino.com"
+                    placeholder="Enter email address"
                     className={`pl-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 text-slate-800 placeholder:text-slate-400 text-sm focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all font-medium ${
                       emailError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""
                     }`}
@@ -399,7 +357,7 @@ export default function AdminLoginPage() {
                       setPassword(e.target.value);
                       if (passwordError) setPasswordError("");
                     }}
-                    placeholder="••••••••"
+                    placeholder="Enter password"
                     className={`pl-10 pr-10 h-11 rounded-xl bg-slate-50/70 border-slate-200 text-slate-800 placeholder:text-slate-400 text-sm focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all font-medium ${
                       passwordError ? "border-red-400 focus:border-red-500 focus:ring-red-500/20" : ""
                     }`}
@@ -423,32 +381,6 @@ export default function AdminLoginPage() {
                 )}
               </div>
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between pt-1">
-                {/* <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onCheckedChange={(val) => setRememberMe(!!val)}
-                    className="rounded-md border-slate-300 data-[state=checked]:bg-[#0ea5e9] data-[state=checked]:border-[#00a896]"
-                  />
-                  <Label
-                    htmlFor="rememberMe"
-                    className="text-xs font-semibold text-slate-600 cursor-pointer select-none"
-                  >
-                    Remember Me
-                  </Label>
-                </div> */}
-
-                {/* <button
-                  type="button"
-                  onClick={() => setShowForgotModal(true)}
-                  className="text-xs font-bold text-[#0284c7] hover:text-sky-700 hover:underline transition-all cursor-pointer"
-                >
-                  Forgot Password?
-                </button> */}
-              </div>
-
               {/* Submit Button */}
               <Button
                 type="submit"
@@ -463,42 +395,11 @@ export default function AdminLoginPage() {
                 ) : (
                   <div className="flex items-center justify-center gap-2">
                     <LockKeyhole className="h-4 w-4" />
-                    <span>Secure Admin Login</span>
+                    <span>Sign In</span>
                   </div>
                 )}
               </Button>
             </form>
-
-            {/* Login As Divider */}
-            <div className="relative flex items-center justify-center my-3">
-              <div className="border-t border-slate-200/80 w-full" />
-              <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider absolute">
-                Quick Select Role
-              </span>
-            </div>
-
-            {/* Role Selectors */}
-            <div className="grid grid-cols-4 gap-2">
-              {roleConfigs.map((role) => {
-                const Icon = role.icon;
-                const isSelected = selectedRole === role.id;
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => handleRoleSelect(role)}
-                    className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer gap-1.5 ${
-                      isSelected
-                        ? "border-[#0284c7] bg-sky-50/80 text-[#0284c7] font-bold shadow-xs ring-2 ring-sky-500/20"
-                        : "border-slate-200/90 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-medium"
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 ${isSelected ? "text-[#0284c7]" : "text-slate-500"}`} />
-                    <span className="text-[11px] leading-none">{role.label}</span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>

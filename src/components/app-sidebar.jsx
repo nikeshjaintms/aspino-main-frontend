@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AspinoLogo, AspinoIcon } from "@/components/aspino-logo";
@@ -87,7 +88,7 @@ const adminMenuItems = [
         title: "Chart of Accounts",
         href: "/admin/accounts",
         icon: Landmark,
-        subject: "bank",
+        subject: "accounts",
         action: "read",
         sidebarPermission: "sidebar-accounts",
       },
@@ -95,7 +96,7 @@ const adminMenuItems = [
         title: "Voucher Engine",
         href: "/admin/vouchers",
         icon: Receipt,
-        subject: "bank",
+        subject: "vouchers",
         action: "read",
         sidebarPermission: "sidebar-vouchers",
       },
@@ -103,7 +104,7 @@ const adminMenuItems = [
         title: "Customer Ledger (AR)",
         href: "/admin/customer-ledger",
         icon: CreditCard,
-        subject: "customer",
+        subject: "customer_ledger",
         action: "read",
         sidebarPermission: "sidebar-customer-ledger",
       },
@@ -111,7 +112,7 @@ const adminMenuItems = [
         title: "Supplier Ledger (AP)",
         href: "/admin/supplier-ledger",
         icon: Coins,
-        subject: "supplier",
+        subject: "supplier_ledger",
         action: "read",
         sidebarPermission: "sidebar-supplier-ledger",
       },
@@ -119,7 +120,7 @@ const adminMenuItems = [
         title: "Financial Statements",
         href: "/admin/financial-reports",
         icon: BarChart3,
-        subject: "bank",
+        subject: "financial_reports",
         action: "read",
         sidebarPermission: "sidebar-financial-reports",
       },
@@ -268,7 +269,7 @@ const userMenuItems = [
         title: "Chart of Accounts",
         href: "/user/accounts",
         icon: Landmark,
-        subject: "bank",
+        subject: "accounts",
         action: "read",
         sidebarPermission: "sidebar-accounts",
       },
@@ -276,7 +277,7 @@ const userMenuItems = [
         title: "Customer Ledger",
         href: "/user/customer-ledger",
         icon: CreditCard,
-        subject: "customer",
+        subject: "customer_ledger",
         action: "read",
         sidebarPermission: "sidebar-customer-ledger",
       },
@@ -284,7 +285,7 @@ const userMenuItems = [
         title: "Supplier Ledger",
         href: "/user/supplier-ledger",
         icon: Coins,
-        subject: "supplier",
+        subject: "supplier_ledger",
         action: "read",
         sidebarPermission: "sidebar-supplier-ledger",
       },
@@ -316,29 +317,51 @@ const userMenuItems = [
 export function AppSidebar({ variant = "admin" }) {
   const pathname = usePathname();
   const { can, isSuperAdmin } = usePermissions();
+  const [mounted, setMounted] = useState(false);
   const menuItems = variant === "admin" ? adminMenuItems : userMenuItems;
 
-  const filteredMenuItems = menuItems
-    .map((group) => {
-      const visibleItems = group.items.filter((item) => {
-        if (isSuperAdmin) return true;
-        if (item.sidebarPermission) {
-          const mod = item.sidebarPermission.replace(/^sidebar-/, "");
-          if (
-            can("sidebar", mod) ||
-            can("read", item.sidebarPermission) ||
-            can("sidebar", item.sidebarPermission) ||
-            can("view", item.sidebarPermission)
-          ) {
-            return true;
-          }
-        }
-        if (!item.subject) return true;
-        return can(item.action || "read", item.subject);
-      });
-      return { ...group, items: visibleItems };
-    })
-    .filter((group) => group.items.length > 0);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const filteredMenuItems = mounted
+    ? menuItems
+        .map((group) => {
+          const visibleItems = group.items.filter((item) => {
+            if (isSuperAdmin) return true;
+
+            if (item.sidebarPermission) {
+              const mod = item.sidebarPermission.replace(/^sidebar-/, "");
+              const modUnderscore = mod.replace(/-/g, "_");
+              if (
+                can("sidebar", mod) ||
+                can("sidebar", modUnderscore) ||
+                can("read", mod) ||
+                can("read", modUnderscore) ||
+                can("read", item.sidebarPermission) ||
+                can("sidebar", item.sidebarPermission) ||
+                can("view", item.sidebarPermission)
+              ) {
+                return true;
+              }
+            }
+
+            if (item.subject) {
+              const subjectUnderscore = item.subject.replace(/-/g, "_");
+              return (
+                can(item.action || "read", item.subject) ||
+                can(item.action || "read", subjectUnderscore) ||
+                can("sidebar", item.subject) ||
+                can("sidebar", subjectUnderscore)
+              );
+            }
+
+            return !item.sidebarPermission && !item.subject;
+          });
+          return { ...group, items: visibleItems };
+        })
+        .filter((group) => group.items.length > 0)
+    : [];
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -361,43 +384,55 @@ export function AppSidebar({ variant = "admin" }) {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-3 gap-2 group-data-[collapsible=icon]:px-0">
-        {filteredMenuItems.map((group) => (
-          <SidebarGroup key={group.group} className="px-2 py-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1">
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/70 px-2 mb-1 group-data-[collapsible=icon]:hidden">
-              {group.group}
-            </SidebarGroupLabel>
-            <SidebarGroupContent className="group-data-[collapsible=icon]:w-full">
-              <SidebarMenu className="gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-                {group.items.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full">
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        tooltip={item.title}
-                        className="h-10 rounded-xl transition-all duration-200 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center"
-                      >
-                        <Link href={item.href} className="flex items-center justify-start group-data-[collapsible=icon]:justify-center gap-3">
-                          <item.icon className="h-5 w-5 shrink-0" />
-                          <span className="font-medium text-sm group-data-[collapsible=icon]:hidden">{item.title}</span>
-                          {item.badge && (
-                            <Badge
-                              variant={item.badge === "New" ? "default" : "secondary"}
-                              className="ml-auto text-[10px] h-5 px-1.5 group-data-[collapsible=icon]:hidden"
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {!mounted ? (
+          <div className="px-2 py-1 space-y-2 group-data-[collapsible=icon]:px-1">
+            <div className="h-3 w-16 bg-muted/40 rounded animate-pulse mb-2 group-data-[collapsible=icon]:hidden" />
+            <div className="h-10 w-full bg-muted/30 rounded-xl animate-pulse" />
+            <div className="h-10 w-full bg-muted/30 rounded-xl animate-pulse" />
+            <div className="h-10 w-full bg-muted/30 rounded-xl animate-pulse" />
+            <div className="h-3 w-20 bg-muted/40 rounded animate-pulse my-2 group-data-[collapsible=icon]:hidden" />
+            <div className="h-10 w-full bg-muted/30 rounded-xl animate-pulse" />
+            <div className="h-10 w-full bg-muted/30 rounded-xl animate-pulse" />
+          </div>
+        ) : (
+          filteredMenuItems.map((group) => (
+            <SidebarGroup key={group.group} className="px-2 py-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-1">
+              <SidebarGroupLabel className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground/70 px-2 mb-1 group-data-[collapsible=icon]:hidden">
+                {group.group}
+              </SidebarGroupLabel>
+              <SidebarGroupContent className="group-data-[collapsible=icon]:w-full">
+                <SidebarMenu className="gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+                  {group.items.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <SidebarMenuItem key={item.href} className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full">
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          tooltip={item.title}
+                          className="h-10 rounded-xl transition-all duration-200 group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center"
+                        >
+                          <Link href={item.href} className="flex items-center justify-start group-data-[collapsible=icon]:justify-center gap-3">
+                            <item.icon className="h-5 w-5 shrink-0" />
+                            <span className="font-medium text-sm group-data-[collapsible=icon]:hidden">{item.title}</span>
+                            {item.badge && (
+                              <Badge
+                                variant={item.badge === "New" ? "default" : "secondary"}
+                                className="ml-auto text-[10px] h-5 px-1.5 group-data-[collapsible=icon]:hidden"
+                              >
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))
+        )}
       </SidebarContent>
 
       <SidebarFooter className="h-14 border-t px-3 flex items-center justify-center group-data-[collapsible=icon]:px-0">

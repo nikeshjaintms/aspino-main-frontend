@@ -41,9 +41,9 @@ export default async function AdminLayout({ children }) {
   return (
     <SidebarProvider>
       <AppSidebar variant="admin" />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 flex-1 overflow-x-hidden">
         <Navbar user={user} />
-        <main className="flex-1 p-4 sm:p-6 space-y-6">{children}</main>
+        <div className="flex-1 p-4 sm:p-6 space-y-6">{children}</div>
         <Footer />
       </SidebarInset>
     </SidebarProvider>

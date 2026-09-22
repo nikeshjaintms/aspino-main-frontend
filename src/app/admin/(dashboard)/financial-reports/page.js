@@ -52,9 +52,11 @@ import {
   Percent,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
 
-export default function FinancialReportsPage() {
+function FinancialReportsContent() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
   const { vouchers = [], loading: vouchersLoading } = useSelector((state) => state.finance || {});
   const { accounts = [], loading: accountsLoading } = useSelector((state) => state.accounts || {});
 
@@ -484,14 +486,16 @@ export default function FinancialReportsPage() {
             Refresh
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            className="rounded-xl border-border/80 shadow-sm"
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Print Statement
-          </Button>
+          {can("export", "financial_reports") && (
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              className="rounded-xl border-border/80 shadow-sm"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Statement
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -1262,3 +1266,12 @@ export default function FinancialReportsPage() {
     </div>
   );
 }
+
+export default function FinancialReportsPage() {
+  return (
+    <RouteGuard permissionKey="financial_reports">
+      <FinancialReportsContent />
+    </RouteGuard>
+  );
+}
+

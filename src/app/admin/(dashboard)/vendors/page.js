@@ -39,10 +39,13 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function VendorsPage() {
+  const { can } = usePermissions();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +97,7 @@ export default function VendorsPage() {
       if (search.trim()) {
         queryParams.append("search", search.trim());
       }
-      const res = await fetch(`${API_BASE_URL}/vendor?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/vendor?${queryParams.toString()}`);
       if (!res.ok) throw new Error("Failed to load vendors listing");
       const data = await res.json();
       setVendors(data.data || []);
@@ -166,7 +169,7 @@ export default function VendorsPage() {
     if (!vendorToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/vendor/${vendorToDelete}`, {
+      const res = await authFetch(`${API_BASE_URL}/vendor/${vendorToDelete}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete vendor");
@@ -262,7 +265,7 @@ export default function VendorsPage() {
         ? `${API_BASE_URL}/vendor/${editingVendor.id}`
         : `${API_BASE_URL}/vendor`;
       const method = editingVendor ? "PATCH" : "POST";
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(vendorPayload),
@@ -393,32 +396,37 @@ export default function VendorsPage() {
             <Eye className="h-3.5 w-3.5" />
             Show
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEditClick(row)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-            title="Edit Vendor"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => promptDeleteVendor(row.id)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-            title="Delete Vendor"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {can("update", "vendor") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEditClick(row)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+              title="Edit Vendor"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {can("delete", "vendor") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => promptDeleteVendor(row.id)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+              title="Delete Vendor"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <RouteGuard subject="vendor" action="read">
+      <div className="space-y-6">
+        <PageHeader
         title="Vendor Master Registry"
         description="Configure certified vendors, service classifications, contact information, and compliance status"
         breadcrumbs={[
@@ -428,14 +436,16 @@ export default function VendorsPage() {
         ]}
       >
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleAddClick}
-            className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            Add Vendor
-          </Button>
+          {can("create", "vendor") && (
+            <Button
+              size="sm"
+              onClick={handleAddClick}
+              className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              Add Vendor
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -939,6 +949,7 @@ export default function VendorsPage() {
         onConfirm={confirmDeleteVendor}
         loading={deleteLoading}
       />
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

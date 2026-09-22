@@ -75,7 +75,8 @@ import { DataTable } from "@/components/data-table";
 import * as OCR from "@/lib/vehicleOCR";
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { RouteGuard } from "@/context/PermissionContext";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 import Image from "next/image";
 
 export default function GatePassPage() {
@@ -88,6 +89,7 @@ export default function GatePassPage() {
 
 function GatePassPageContent() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
 
   // Redux States
   const {
@@ -231,9 +233,15 @@ function GatePassPageContent() {
   const handleDownloadPDF = async (item) => {
     try {
       setDownloadingId(item.id);
-      const res = await fetch(`${backendUrl}/gate-pass/${item.id}/pdf`);
+      const res = await authFetch(`${backendUrl}/gate-pass/${item.id}/pdf`);
       if (!res.ok) {
-        throw new Error("Failed to generate PDF from backend");
+        let errMsg = "Failed to generate PDF from backend";
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch (_) {}
+        customToast.error(errMsg);
+        return;
       }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -244,9 +252,10 @@ function GatePassPageContent() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      customToast.success(`Gate Pass ${item.passNumber} downloaded successfully`);
     } catch (err) {
       console.error("PDF download error:", err);
-      alert("Failed to download PDF from backend.");
+      customToast.error(err.message || "Failed to download PDF from backend.");
     } finally {
       setDownloadingId(null);
     }
@@ -860,7 +869,7 @@ function GatePassPageContent() {
               {downloadingId === row.id ? "Downloading..." : "PDF"}
             </Button>
 
-            {isGateIn && (
+            {isGateIn && can("update", "gatepass") && (
               <Button
                 size="sm"
                 variant="outline"
@@ -931,24 +940,28 @@ function GatePassPageContent() {
       sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEditCategoryClick(row)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-            title="Edit"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => promptDeleteCategory(row.id)}
-            className="h-8 w-8 text-rose-600 dark:text-rose-455 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {can("update", "pass_category") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEditCategoryClick(row)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              title="Edit"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {can("delete", "pass_category") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => promptDeleteCategory(row.id)}
+              className="h-8 w-8 text-rose-600 dark:text-rose-455 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },

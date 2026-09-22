@@ -54,6 +54,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generateCustomerCode } from "@/lib/code-generator";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -73,19 +75,18 @@ const POPULAR_EXPORT_COUNTRIES = [
   "United States",
   "United Kingdom",
   "Germany",
+  "Switzerland",
+  "Japan",
+  "South Korea",
   "United Arab Emirates",
   "Saudi Arabia",
-  "Singapore",
+  "Brazil",
+  "South Africa",
+  "Vietnam",
+  "Nigeria",
   "Australia",
   "Canada",
-  "Japan",
   "France",
-  "Italy",
-  "Netherlands",
-  "South Africa",
-  "Bangladesh",
-  "Sri Lanka",
-  "Vietnam",
   "Malaysia",
   "Brazil",
   "Mexico",
@@ -93,6 +94,7 @@ const POPULAR_EXPORT_COUNTRIES = [
 ];
 
 export default function CustomersPage() {
+  const { can } = usePermissions();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -165,7 +167,7 @@ export default function CustomersPage() {
         queryParams.append("status", statusFilter);
       }
 
-      const res = await fetch(`${API_BASE_URL}/customer?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/customer?${queryParams.toString()}`);
       if (!res.ok) {
         throw new Error("Failed to load customer list");
       }
@@ -458,7 +460,7 @@ export default function CustomersPage() {
         : `${API_BASE_URL}/customer`;
       const method = editingCustomer ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -498,7 +500,7 @@ export default function CustomersPage() {
     if (!customerToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/customer/${customerToDelete.id}`, {
+      const res = await authFetch(`${API_BASE_URL}/customer/${customerToDelete.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -739,24 +741,28 @@ export default function CustomersPage() {
               <Eye className="h-3.5 w-3.5" />
               Show
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Customer"
-              onClick={() => handleOpenEdit(cust)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Customer"
-              onClick={() => handleOpenDelete(cust)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "customer") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Customer"
+                onClick={() => handleOpenEdit(cust)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "customer") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Customer"
+                onClick={() => handleOpenDelete(cust)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -764,8 +770,9 @@ export default function CustomersPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <RouteGuard subject="customer" action="read">
+      <div className="space-y-6">
+        {/* Page Header */}
       <PageHeader
         title="Customer Master Registry"
         description="Maintain customer registry with GSTIN details, credit terms, domestic/export categorization, and multiple address tracking."
@@ -776,21 +783,15 @@ export default function CustomersPage() {
         ]}
       >
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="h-9 text-xs font-bold rounded-xl flex items-center gap-1.5"
-          >
-            <Download className="h-4 w-4" /> Export CSV
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
-          >
-            <Plus className="h-4 w-4" /> Add Customer
-          </Button>
+          {can("create", "customer") && (
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
+            >
+              <Plus className="h-4 w-4" /> Add Customer
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -1762,6 +1763,7 @@ export default function CustomersPage() {
         loading={deleteLoading}
         onConfirm={handleConfirmDelete}
       />
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

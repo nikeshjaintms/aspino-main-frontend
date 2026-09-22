@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { usePermissions, RouteGuard } from "@/context/PermissionContext";
 
 const VOUCHER_TYPE_CONFIG = {
   JOURNAL: {
@@ -89,19 +90,19 @@ const VOUCHER_TYPE_CONFIG = {
     badgeGradient: "bg-sky-500/20 text-sky-300 border-sky-500/30",
     icon: ArrowRightLeft,
   },
-  SALES_INVOICE: {
+  SALES: {
     label: "Sales Voucher (SV)",
     short: "SV",
-    color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400",
-    badgeGradient: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    icon: CreditCard,
-  },
-  PURCHASE_BILL: {
-    label: "Purchase Bill (PB)",
-    short: "PB",
     color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400",
     badgeGradient: "bg-amber-500/20 text-amber-300 border-amber-500/30",
     icon: Coins,
+  },
+  PURCHASE: {
+    label: "Purchase Voucher (PB)",
+    short: "PB",
+    color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400",
+    badgeGradient: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    icon: Wallet,
   },
 };
 
@@ -114,7 +115,8 @@ const formatCurrency = (val) => {
   }).format(num);
 };
 
-export default function VoucherEnginePage() {
+function VoucherEngineContent() {
+  const { can } = usePermissions();
   const dispatch = useDispatch();
   const { vouchers = [], loading, submitting } = useSelector((state) => state.finance || {});
   const { accounts = [] } = useSelector((state) => state.accounts || {});
@@ -501,15 +503,17 @@ export default function VoucherEnginePage() {
             >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl"
-              onClick={() => handleDeletePrompt(v)}
-              title="Delete Voucher"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("delete", "vouchers") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl"
+                onClick={() => handleDeletePrompt(v)}
+                title="Delete Voucher"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -544,14 +548,16 @@ export default function VoucherEnginePage() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button
-            onClick={() => handleOpenCreate("JOURNAL")}
-            size="sm"
-            className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5 text-xs h-9"
-          >
-            <Plus className="h-4 w-4" />
-            Create Voucher
-          </Button>
+          {can("create", "vouchers") && (
+            <Button
+              onClick={() => handleOpenCreate("JOURNAL")}
+              size="sm"
+              className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5 text-xs h-9"
+            >
+              <Plus className="h-4 w-4" />
+              Create Voucher
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -1114,3 +1120,12 @@ export default function VoucherEnginePage() {
     </div>
   );
 }
+
+export default function VoucherEnginePage() {
+  return (
+    <RouteGuard permissionKey="vouchers">
+      <VoucherEngineContent />
+    </RouteGuard>
+  );
+}
+

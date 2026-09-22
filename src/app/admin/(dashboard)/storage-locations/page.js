@@ -49,6 +49,8 @@ import {
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generateStorageLocationCode } from "@/lib/code-generator";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -58,40 +60,48 @@ const STORAGE_CONDITION_CONFIG = {
     temp: "15°C - 25°C",
     humidity: "NMT 60% RH",
     color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800",
-    icon: Sun,
+  },
+  COLD_STORAGE: {
+    label: "Cold Storage (2°C - 8°C)",
+    temp: "2°C - 8°C",
+    humidity: "Controlled 45% - 65% RH",
+    color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800",
+  },
+  CONTROLLED_ROOM_TEMP: {
+    label: "Controlled Room Temp (20°C - 25°C)",
+    temp: "20°C - 25°C",
+    humidity: "NMT 55% RH",
+    color: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-400 dark:border-teal-800",
   },
   COOL: {
     label: "Cool (8°C - 15°C)",
     temp: "8°C - 15°C",
-    humidity: "NMT 55% RH",
-    color: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800",
-    icon: Thermometer,
-  },
-  COLD_CHAIN: {
-    label: "Cold Chain (2°C - 8°C)",
-    temp: "2°C - 8°C",
-    humidity: "NMT 50% RH",
-    color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800",
-    icon: Snowflake,
-  },
-  FROZEN: {
-    label: "Deep Frozen (-20°C ± 5°C)",
-    temp: "-25°C to -15°C",
-    humidity: "Controlled Dry",
-    color: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800",
-    icon: Snowflake,
-  },
-  CONTROLLED_ROOM_TEMPERATURE: {
-    label: "Controlled Room Temp (20°C - 25°C)",
-    temp: "20°C - 25°C",
     humidity: "NMT 60% RH",
+    color: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800",
+  },
+  DEEP_FREEZE: {
+    label: "Deep Freeze (-20°C ± 5°C)",
+    temp: "-25°C to -15°C",
+    humidity: "N/A",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800",
+  },
+  HAZARDOUS: {
+    label: "Hazardous / Flammable Vault",
+    temp: "15°C - 22°C (Flameproof)",
+    humidity: "Flame-isolated",
     color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800",
-    icon: Thermometer,
+  },
+  DRY_STORAGE: {
+    label: "Dry Storage (Desiccated)",
+    temp: "15°C - 25°C",
+    humidity: "NMT 30% RH",
+    color: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800",
   },
 };
 
 const STORE_TYPE_OPTIONS = [
-  { value: "RAW_MATERIAL_STORE", label: "Raw Material Store" },
+  { value: "RAW_MATERIAL_STORE", label: "Raw Material Store (API / Excipients)" },
+  { value: "SOLVENT_YARD", label: "Solvent Yard / Flammable Storage" },
   { value: "PACKAGING_STORE", label: "Packaging Material Store" },
   { value: "FINISHED_GOODS_STORE", label: "Finished Goods Store" },
   { value: "QUARANTINE_STORE", label: "Quarantine Store / Holding Bay" },
@@ -100,6 +110,15 @@ const STORE_TYPE_OPTIONS = [
 ];
 
 export default function StorageLocationsPage() {
+  return (
+    <RouteGuard subject="storage_location" action="read">
+      <StorageLocationsContent />
+    </RouteGuard>
+  );
+}
+
+function StorageLocationsContent() {
+  const { can } = usePermissions();
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -560,27 +579,31 @@ export default function StorageLocationsPage() {
               <Eye className="h-3.5 w-3.5" />
               Show
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Location"
-              onClick={() => handleOpenEdit(loc)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Location"
-              onClick={() => {
-                setLocationToDelete(loc);
-                setDeleteConfirmOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "storage_location") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Location"
+                onClick={() => handleOpenEdit(loc)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "storage_location") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Location"
+                onClick={() => {
+                  setLocationToDelete(loc);
+                  setDeleteConfirmOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -599,10 +622,12 @@ export default function StorageLocationsPage() {
           { label: "Storage Locations" },
         ]}
       >
-        <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
-          <Plus className="h-4 w-4" />
-          Add Storage Location
-        </Button>
+        {can("create", "storage_location") && (
+          <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />
+            Add Storage Location
+          </Button>
+        )}
       </PageHeader>
 
       {/* Stats Cards */}

@@ -32,10 +32,21 @@ import {
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generateCategoryCode } from "@/lib/code-generator";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function ProductCategoriesPage() {
+  return (
+    <RouteGuard subject="product_category" action="read">
+      <ProductCategoriesContent />
+    </RouteGuard>
+  );
+}
+
+function ProductCategoriesContent() {
+  const { can } = usePermissions();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -374,24 +385,28 @@ export default function ProductCategoriesPage() {
         const item = row?.original || row;
         return (
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleOpenEdit(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Category"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteClick(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Category"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "product_category") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleOpenEdit(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Category"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "product_category") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteClick(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Category"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -409,13 +424,15 @@ export default function ProductCategoriesPage() {
           { label: "Product Categories" },
         ]}
       >
-        <Button
-          onClick={handleOpenAdd}
-          className="gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md rounded-xl"
-        >
-          <Plus className="h-4 w-4" />
-          Add Category
-        </Button>
+        {can("create", "product_category") && (
+          <Button
+            onClick={handleOpenAdd}
+            className="gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white shadow-md rounded-xl"
+          >
+            <Plus className="h-4 w-4" />
+            Add Category
+          </Button>
+        )}
       </PageHeader>
 
       {/* Metrics Row */}

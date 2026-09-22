@@ -26,6 +26,7 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
+import { authFetch } from "@/lib/api";
 
 const statusConfig = {
   GATE_IN: {
@@ -90,10 +91,10 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [passRes, supplierRes, catRes, bankRes] = await Promise.all([
-          fetch(`${backendUrl}/gate-pass?limit=1000`).catch(() => null),
-          fetch(`${backendUrl}/supplier`).catch(() => null),
-          fetch(`${backendUrl}/pass-category`).catch(() => null),
-          fetch(`${backendUrl}/bank`).catch(() => null),
+          authFetch(`${backendUrl}/gate-pass?limit=1000`).catch(() => null),
+          authFetch(`${backendUrl}/supplier`).catch(() => null),
+          authFetch(`${backendUrl}/pass-category`).catch(() => null),
+          authFetch(`${backendUrl}/bank`).catch(() => null),
         ]);
 
         const passData = passRes && passRes.ok ? await passRes.json().catch(() => ({})) : {};

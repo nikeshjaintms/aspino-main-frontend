@@ -60,6 +60,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -132,6 +134,7 @@ const PAYMENT_MODES = [
 
 export default function CustomerLedgerPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
   const { vouchers = [], loading: vouchersLoading } = useSelector((state) => state.finance || {});
   const { accounts = [] } = useSelector((state) => state.accounts || {});
 
@@ -179,7 +182,7 @@ export default function CustomerLedgerPage() {
   const fetchCustomerList = async () => {
     setLoadingCustomers(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/customers?limit=100`).catch(() => null);
+      const res = await authFetch(`${API_BASE_URL}/customer?limit=100`).catch(() => null);
       if (res && res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.data || [];
@@ -197,7 +200,7 @@ export default function CustomerLedgerPage() {
 
   const fetchBankList = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/bank`).catch(() => null);
+      const res = await authFetch(`${API_BASE_URL}/bank`).catch(() => null);
       if (res && res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.data || [];
@@ -714,9 +717,10 @@ export default function CustomerLedgerPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      {/* Top Header */}
-      <PageHeader
+    <RouteGuard subject="customer_ledger" action="read">
+      <div className="space-y-6">
+        {/* Page Header */}
+        <PageHeader
         title="Customer Ledger & Accounts Receivable"
         description="Track trade debtors, monitor invoices & collections, analyze aging brackets, and record customer receipts."
       >
@@ -734,13 +738,15 @@ export default function CustomerLedgerPage() {
             Refresh
           </Button>
 
-          <Button
-            className="rounded-xl bg-gradient-to-r from-aspino-primary to-aspino-secondary hover:opacity-90 shadow-md font-semibold text-white"
-            onClick={() => handleOpenReceiptDialog()}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Record Customer Receipt
-          </Button>
+          {can("create", "customer_ledger") && (
+            <Button
+              className="rounded-xl bg-gradient-to-r from-aspino-primary to-aspino-secondary hover:opacity-90 shadow-md font-semibold text-white"
+              onClick={() => handleOpenReceiptDialog()}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Record Customer Receipt
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -1046,14 +1052,16 @@ export default function CustomerLedgerPage() {
                                 View Statement
                               </Button>
 
-                              <Button
-                                size="sm"
-                                className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs shadow-sm"
-                                onClick={() => handleOpenReceiptDialog(cust.id || cust._id)}
-                              >
-                                <Receipt className="h-3.5 w-3.5 mr-1" />
-                                Record Receipt
-                              </Button>
+                              {can("create", "customer_ledger") && (
+                                <Button
+                                  size="sm"
+                                  className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs shadow-sm"
+                                  onClick={() => handleOpenReceiptDialog(cust.id || cust._id)}
+                                >
+                                  <Receipt className="h-3.5 w-3.5 mr-1" />
+                                  Record Receipt
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1121,13 +1129,15 @@ export default function CustomerLedgerPage() {
                     <span className="text-[11px] text-muted-foreground">Net Receivable Due</span>
                   </div>
 
-                  <Button
-                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shrink-0"
-                    onClick={() => handleOpenReceiptDialog(currentCustomer.id || currentCustomer._id)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Record Receipt
-                  </Button>
+                  {can("create", "customer_ledger") && (
+                    <Button
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md shrink-0"
+                      onClick={() => handleOpenReceiptDialog(currentCustomer.id || currentCustomer._id)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Record Receipt
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -1144,15 +1154,17 @@ export default function CustomerLedgerPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.print()}
-                  className="rounded-xl border-border/80 shadow-sm text-xs"
-                >
-                  <Printer className="mr-1.5 h-3.5 w-3.5" />
-                  Print Statement
-                </Button>
+                {can("export", "customer_ledger") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.print()}
+                    className="rounded-xl border-border/80 shadow-sm text-xs"
+                  >
+                    <Printer className="mr-1.5 h-3.5 w-3.5" />
+                    Print Statement
+                  </Button>
+                )}
               </div>
             </CardHeader>
 
@@ -1611,6 +1623,7 @@ export default function CustomerLedgerPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

@@ -52,18 +52,20 @@ import {
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generateQcSpecCode } from "@/lib/code-generator";
+import { usePermissions, RouteGuard } from "@/context/PermissionContext";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 // Standard QC Parameter Presets for quick autofill
 const QC_PRESETS = {
   PRODUCT: [
-    { parameterName: "Description / Appearance", testMethod: "Visual Inspection", acceptableLimits: "White circular biconvex tablets, plain on both sides", uom: "N/A" },
-    { parameterName: "Identification (Assay)", testMethod: "HPLC / UV-Vis (IP/USP)", acceptableLimits: "Positive for active drug substance", uom: "N/A" },
-    { parameterName: "Average Weight", testMethod: "Analytical Balance (USP <2091>)", acceptableLimits: "550 mg ± 5% (522.5 mg - 577.5 mg)", uom: "mg" },
-    { parameterName: "Disintegration Time", testMethod: "USP Apparatus (<701>)", acceptableLimits: "NMT 15 minutes", uom: "Mins" },
-    { parameterName: "Assay (Purity)", testMethod: "HPLC (USP/BP)", acceptableLimits: "95.0% - 105.0% of labeled claim", uom: "%" },
-    { parameterName: "Dissolution", testMethod: "USP Apparatus II (Paddle, 50 RPM)", acceptableLimits: "NLT 80% (Q) in 30 minutes", uom: "%" },
+    { parameterName: "Description / Visual Appearance", testMethod: "Visual Inspection", acceptableLimits: "White crystalline powder / conform to standard", isMandatory: true },
+    { parameterName: "Assay (Purity)", testMethod: "HPLC / Titration", acceptableLimits: "98.0% - 102.0% w/w", isMandatory: true },
+    { parameterName: "pH (1% aqueous solution)", testMethod: "Potentiometry (pH Meter)", acceptableLimits: "5.5 - 7.5", isMandatory: true },
+    { parameterName: "Loss on Drying (LOD)", testMethod: "Gravimetric / Oven at 105°C", acceptableLimits: "Not more than 0.5% w/w", isMandatory: false },
+    { parameterName: "Related Substances / Impurities", testMethod: "HPLC", acceptableLimits: "Individual: NMT 0.1%, Total: NMT 0.5%", isMandatory: false },
+    { parameterName: "Heavy Metals", testMethod: "Atomic Absorption / ICP-OES", acceptableLimits: "Not more than 10 ppm", isMandatory: false },
+    { parameterName: "Microbial Enumeration (TAMC/TYMC)", testMethod: "USP <61> / IP Plate Count", acceptableLimits: "TAMC: NMT 1000 cfu/g, TYMC: NMT 100 cfu/g", isMandatory: false },
   ],
   PACKING_MATERIAL: [
     { parameterName: "Visual Description & Printing", testMethod: "Visual vs Approved Artwork", acceptableLimits: "Clean, legible printing without smudges or streaks", uom: "N/A" },
@@ -79,7 +81,8 @@ const QC_PRESETS = {
   ],
 };
 
-export default function QcSpecificationsPage() {
+function QcSpecificationsContent() {
+  const { can } = usePermissions();
   const [specs, setSpecs] = useState([]);
   const [products, setProducts] = useState([]);
   const [packingMaterials, setPackingMaterials] = useState([]);
@@ -713,27 +716,31 @@ export default function QcSpecificationsPage() {
               <Eye className="h-3.5 w-3.5" />
               Show
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Specification"
-              onClick={() => handleOpenEdit(spec)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Specification"
-              onClick={() => {
-                setSpecToDelete(spec);
-                setDeleteConfirmOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "qc_specification") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Specification"
+                onClick={() => handleOpenEdit(spec)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "qc_specification") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Specification"
+                onClick={() => {
+                  setSpecToDelete(spec);
+                  setDeleteConfirmOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -752,10 +759,12 @@ export default function QcSpecificationsPage() {
           { label: "QC Specifications" },
         ]}
       >
-        <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
-          <Plus className="h-4 w-4" />
-          Add QC Specification
-        </Button>
+        {can("create", "qc_specification") && (
+          <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />
+            Add QC Specification
+          </Button>
+        )}
       </PageHeader>
 
       {/* Stats Cards */}
@@ -1594,3 +1603,12 @@ export default function QcSpecificationsPage() {
     </div>
   );
 }
+
+export default function QcSpecificationsPage() {
+  return (
+    <RouteGuard permissionKey="qc_specification">
+      <QcSpecificationsContent />
+    </RouteGuard>
+  );
+}
+

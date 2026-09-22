@@ -60,6 +60,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -136,12 +138,13 @@ const PAYMENT_MODES = [
   { value: "NEFT", label: "NEFT Bank Transfer" },
   { value: "IMPS", label: "IMPS Instant Transfer" },
   { value: "CHEQUE", label: "Cheque / Demand Draft" },
-  { value: "BANK_TRANSFER", label: "Direct Bank Transfer" },
+  { value: "UPI", label: "UPI Corporate Payment" },
   { value: "CASH", label: "Cash Payment" },
 ];
 
 export default function SupplierLedgerPage() {
   const dispatch = useDispatch();
+  const { can } = usePermissions();
   const { vouchers = [], loading: vouchersLoading } = useSelector((state) => state.finance || {});
   const { accounts = [] } = useSelector((state) => state.accounts || {});
 
@@ -187,7 +190,7 @@ export default function SupplierLedgerPage() {
   const fetchSupplierList = async () => {
     setLoadingSuppliers(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/suppliers?limit=100`).catch(() => null);
+      const res = await authFetch(`${API_BASE_URL}/supplier?limit=100`).catch(() => null);
       if (res && res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.data || [];
@@ -205,7 +208,7 @@ export default function SupplierLedgerPage() {
 
   const fetchBankList = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/bank`).catch(() => null);
+      const res = await authFetch(`${API_BASE_URL}/bank`).catch(() => null);
       if (res && res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.data || [];
@@ -671,9 +674,10 @@ export default function SupplierLedgerPage() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
-      {/* Top Header */}
-      <PageHeader
+    <RouteGuard subject="supplier_ledger" action="read">
+      <div className="space-y-6">
+        {/* Top Header */}
+        <PageHeader
         title="Supplier Ledger & Accounts Payable"
         description="Monitor vendor payables, manage purchase bills, reconcile statements, and execute bank disbursements."
       >
@@ -691,13 +695,15 @@ export default function SupplierLedgerPage() {
             Refresh
           </Button>
 
-          <Button
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 shadow-md font-semibold text-white"
-            onClick={() => handleOpenPaymentDialog()}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Disburse Vendor Payment
-          </Button>
+          {can("create", "supplier_ledger") && (
+            <Button
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 shadow-md font-semibold text-white"
+              onClick={() => handleOpenPaymentDialog()}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Disburse Vendor Payment
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -972,107 +978,113 @@ export default function SupplierLedgerPage() {
                               Statement
                             </Button>
 
-                            <Button
-                              size="sm"
-                              className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs shadow-sm"
-                              onClick={() => handleOpenPaymentDialog(sup.id || sup._id)}
-                            >
-                              <Coins className="h-3.5 w-3.5 mr-1" />
-                              Disburse
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </TabsContent>
-
-        {/* ─── TAB 2: DETAILED VENDOR STATEMENT ─────────────────────────── */}
-        <TabsContent value="statement" className="space-y-6 m-0">
-          {currentSupplier && (
-            <Card className="rounded-2xl border-border/60 bg-gradient-to-r from-card via-card/80 to-muted/20 shadow-sm p-5">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-xl font-bold text-foreground tracking-tight">
-                      {currentSupplier.name}
-                    </h3>
-                    <Badge className="bg-aspino-primary/10 text-aspino-primary border-aspino-primary/30 font-semibold">
-                      {currentSupplier.supplierCode}
-                    </Badge>
-                    <Badge variant="outline" className="border-border/80">
-                      {currentSupplier.category || "Vendor"}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-1 gap-x-6 text-xs text-muted-foreground pt-1">
-                    <div className="flex items-center gap-1.5">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary/70" />
-                      <span>GSTIN: </span>
-                      <strong className="text-foreground">{currentSupplier.gstNo || "N/A"}</strong>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-primary/70" />
-                      <span>Credit Terms: </span>
-                      <strong className="text-foreground">{currentSupplier.creditTerms || "Net 30 Days"}</strong>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Landmark className="h-3.5 w-3.5 text-primary/70" />
-                      <span>Bank A/C: </span>
-                      <strong className="text-foreground font-mono">
-                        {currentSupplier.bankAccountNo ? `${currentSupplier.bankName} (${currentSupplier.bankAccountNo.slice(-4)})` : "N/A"}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 lg:border-l border-border/80 pt-4 lg:pt-0 lg:pl-6">
-                  <div>
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Current Payable Balance
-                    </div>
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
-                      {formatINR(supplierLedgerEntries[supplierLedgerEntries.length - 1]?.runningBalance ?? currentSupplier.openingBalance ?? 0)}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">Accounts Payable (AP)</span>
-                  </div>
-
-                  <Button
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shrink-0"
-                    onClick={() => handleOpenPaymentDialog(currentSupplier.id || currentSupplier._id)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Disburse Payment
-                  </Button>
-                </div>
+                              {can("create", "supplier_ledger") && (
+                                <Button
+                                  size="sm"
+                                  className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs shadow-sm"
+                                  onClick={() => handleOpenPaymentDialog(sup.id || sup._id)}
+                                >
+                                  <Coins className="h-3.5 w-3.5 mr-1" />
+                                  Disburse
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </Card>
-          )}
+          </TabsContent>
 
-          {/* Running Statement Table */}
-          <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden bg-card">
-            <CardHeader className="bg-muted/30 border-b border-border/60 py-4 px-6 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold">Vendor Running Ledger Statement</CardTitle>
-                <CardDescription className="text-xs">
-                  Purchase bills inward (credit), payment disbursements (debit), and running balance
-                </CardDescription>
-              </div>
+          {/* ─── TAB 2: DETAILED VENDOR STATEMENT ─────────────────────────── */}
+          <TabsContent value="statement" className="space-y-6 m-0">
+            {currentSupplier && (
+              <Card className="rounded-2xl border-border/60 bg-gradient-to-r from-card via-card/80 to-muted/20 shadow-sm p-5">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-bold text-foreground tracking-tight">
+                        {currentSupplier.name}
+                      </h3>
+                      <Badge className="bg-aspino-primary/10 text-aspino-primary border-aspino-primary/30 font-semibold">
+                        {currentSupplier.supplierCode}
+                      </Badge>
+                      <Badge variant="outline" className="border-border/80">
+                        {currentSupplier.category || "Vendor"}
+                      </Badge>
+                    </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.print()}
-                className="rounded-xl border-border/80 shadow-sm text-xs"
-              >
-                <Printer className="mr-1.5 h-3.5 w-3.5" />
-                Print Statement
-              </Button>
-            </CardHeader>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-1 gap-x-6 text-xs text-muted-foreground pt-1">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="h-3.5 w-3.5 text-primary/70" />
+                        <span>GSTIN: </span>
+                        <strong className="text-foreground">{currentSupplier.gstNo || "N/A"}</strong>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-primary/70" />
+                        <span>Credit Terms: </span>
+                        <strong className="text-foreground">{currentSupplier.creditTerms || "Net 30 Days"}</strong>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Landmark className="h-3.5 w-3.5 text-primary/70" />
+                        <span>Bank A/C: </span>
+                        <strong className="text-foreground font-mono">
+                          {currentSupplier.bankAccountNo ? `${currentSupplier.bankName} (${currentSupplier.bankAccountNo.slice(-4)})` : "N/A"}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-t lg:border-t-0 lg:border-l border-border/80 pt-4 lg:pt-0 lg:pl-6">
+                    <div>
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Current Payable Balance
+                      </div>
+                      <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                        {formatINR(supplierLedgerEntries[supplierLedgerEntries.length - 1]?.runningBalance ?? currentSupplier.openingBalance ?? 0)}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground">Accounts Payable (AP)</span>
+                    </div>
+
+                    {can("create", "supplier_ledger") && (
+                      <Button
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shrink-0"
+                        onClick={() => handleOpenPaymentDialog(currentSupplier.id || currentSupplier._id)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Disburse Payment
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Running Statement Table */}
+            <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden bg-card">
+              <CardHeader className="bg-muted/30 border-b border-border/60 py-4 px-6 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold">Vendor Running Ledger Statement</CardTitle>
+                  <CardDescription className="text-xs">
+                    Purchase bills inward (credit), payment disbursements (debit), and running balance
+                  </CardDescription>
+                </div>
+
+                {can("export", "supplier_ledger") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.print()}
+                    className="rounded-xl border-border/80 shadow-sm text-xs"
+                  >
+                    <Printer className="mr-1.5 h-3.5 w-3.5" />
+                    Print Statement
+                  </Button>
+                )}
+              </CardHeader>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left border-collapse">
@@ -1527,6 +1539,7 @@ export default function SupplierLedgerPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

@@ -45,10 +45,10 @@ import {
 } from "lucide-react";
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { generateProductCode } from "@/lib/code-generator";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-
 
 const SHELF_LIFE_OPTIONS = [
   "6 Months",
@@ -61,15 +61,24 @@ const SHELF_LIFE_OPTIONS = [
 ];
 
 const STORAGE_OPTIONS = [
-  "Store below 25°C in a dry place",
-  "Store between 2°C - 8°C (Cold Storage / Refrigerate)",
-  "Store below 30°C, protect from direct sunlight",
-  "Protect from light and moisture",
-  "Controlled Room Temperature (20°C - 25°C)",
-  "Deep Freeze (-20°C ± 5°C)",
+  "Ambient (15°C - 25°C)",
+  "Cool & Dry Place (Below 25°C)",
+  "Cold Storage (2°C - 8°C)",
+  "Frozen (-20°C)",
+  "Dry & Moisture Free (RH < 60%)",
+  "Protect from Direct Sunlight",
 ];
 
 export default function ProductMasterPage() {
+  return (
+    <RouteGuard subject="product" action="read">
+      <ProductMasterContent />
+    </RouteGuard>
+  );
+}
+
+function ProductMasterContent() {
+  const { can } = usePermissions();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -573,24 +582,28 @@ export default function ProductMasterPage() {
               <Eye className="h-3.5 w-3.5" />
               Show
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleOpenEdit(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Product"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteClick(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Product"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "product") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleOpenEdit(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Product"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "product") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteClick(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Product"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -608,13 +621,15 @@ export default function ProductMasterPage() {
           { label: "Product Master" },
         ]}
       >
-        <Button
-          onClick={handleOpenAdd}
-          className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md rounded-xl"
-        >
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
+        {can("create", "product") && (
+          <Button
+            onClick={handleOpenAdd}
+            className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-md rounded-xl"
+          >
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        )}
       </PageHeader>
 
       {/* Metrics Row */}

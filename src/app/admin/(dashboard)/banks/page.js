@@ -28,10 +28,13 @@ import {
 } from "lucide-react";
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function BankMasterPage() {
+  const { can } = usePermissions();
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +84,7 @@ export default function BankMasterPage() {
       if (debouncedSearch.trim()) {
         queryParams.append("search", debouncedSearch.trim());
       }
-      const res = await fetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
       if (!res.ok) {
         setBanks([]);
         return;
@@ -111,7 +114,7 @@ export default function BankMasterPage() {
         if (debouncedSearch.trim()) {
           queryParams.append("search", debouncedSearch.trim());
         }
-        const res = await fetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
+        const res = await authFetch(`${API_BASE_URL}/bank?${queryParams.toString()}`);
         if (!res.ok) {
           setBanks([]);
           return;
@@ -161,7 +164,7 @@ export default function BankMasterPage() {
     if (!bankToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/bank/${bankToDelete}`, {
+      const res = await authFetch(`${API_BASE_URL}/bank/${bankToDelete}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -207,7 +210,7 @@ export default function BankMasterPage() {
     try {
       const url = editingBank ? `${API_BASE_URL}/bank/${editingBank.id}` : `${API_BASE_URL}/bank`;
       const method = editingBank ? "PATCH" : "POST";
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -264,32 +267,37 @@ export default function BankMasterPage() {
       sortable: false,
       cell: (row) => (
         <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEditClick(row)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-            title="Edit Bank"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => promptDeleteBank(row.id)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-            title="Delete Bank"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {can("update", "bank") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEditClick(row)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+              title="Edit Bank"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {can("delete", "bank") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => promptDeleteBank(row.id)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+              title="Delete Bank"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <RouteGuard subject="bank" action="read">
+      <div className="space-y-6">
+        <PageHeader
         title="Bank Master Listing"
         description="Configure corporate clearing institutions for vendor bank disbursements"
         breadcrumbs={[
@@ -298,14 +306,16 @@ export default function BankMasterPage() {
           { label: "Bank Master" },
         ]}
       >
-        <Button
-          size="sm"
-          onClick={handleAddClick}
-          className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add Bank Institution
-        </Button>
+        {can("create", "bank") && (
+          <Button
+            size="sm"
+            onClick={handleAddClick}
+            className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Add Bank Institution
+          </Button>
+        )}
       </PageHeader>
 
       {/* Metrics Summary Strip */}
@@ -493,6 +503,7 @@ export default function BankMasterPage() {
         onConfirm={confirmDeleteBank}
         loading={deleteLoading}
       />
-    </div>
+      </div>
+    </RouteGuard>
   );
 }

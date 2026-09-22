@@ -48,6 +48,7 @@ import {
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generatePackingMaterialCode } from "@/lib/code-generator";
+import { usePermissions, RouteGuard } from "@/context/PermissionContext";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -59,7 +60,8 @@ const STORAGE_OPTIONS = [
   "Protect from Direct Sunlight",
 ];
 
-export default function PackingMaterialsPage() {
+function PackingMaterialsContent() {
+  const { can } = usePermissions();
   const [materials, setMaterials] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [uoms, setUoms] = useState([]);
@@ -608,27 +610,31 @@ export default function PackingMaterialsPage() {
               <Eye className="h-3.5 w-3.5" />
               Show
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit Material"
-              onClick={() => handleOpenEdit(mat)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete Material"
-              onClick={() => {
-                setMaterialToDelete(mat);
-                setDeleteConfirmOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "packing_material") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit Material"
+                onClick={() => handleOpenEdit(mat)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "packing_material") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete Material"
+                onClick={() => {
+                  setMaterialToDelete(mat);
+                  setDeleteConfirmOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -647,10 +653,12 @@ export default function PackingMaterialsPage() {
           { label: "Packing Materials" },
         ]}
       >
-        <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
-          <Plus className="h-4 w-4" />
-          Add Packing Material
-        </Button>
+        {can("create", "packing_material") && (
+          <Button onClick={handleOpenCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm">
+            <Plus className="h-4 w-4" />
+            Add Packing Material
+          </Button>
+        )}
       </PageHeader>
 
       {/* Stats Cards */}
@@ -1369,3 +1377,12 @@ export default function PackingMaterialsPage() {
     </div>
   );
 }
+
+export default function PackingMaterialsPage() {
+  return (
+    <RouteGuard permissionKey="packing_material">
+      <PackingMaterialsContent />
+    </RouteGuard>
+  );
+}
+

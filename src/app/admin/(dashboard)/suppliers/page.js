@@ -51,9 +51,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { RouteGuard } from "@/context/PermissionContext";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
 import Link from "next/link";
 import { generateSupplierCode } from "@/lib/code-generator";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -92,6 +93,7 @@ export default function SuppliersPage() {
 }
 
 function SuppliersPageContent() {
+  const { can } = usePermissions();
   const [suppliers, setSuppliers] = useState([]);
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -162,7 +164,7 @@ function SuppliersPageContent() {
   // Fetch Banks from NestJS backend (for select dropdown)
   const fetchBanks = async () => {
     try {
-      const banksRes = await fetch(`${API_BASE_URL}/bank`);
+      const banksRes = await authFetch(`${API_BASE_URL}/bank`);
       if (!banksRes.ok) return;
       const banksData = await banksRes.json();
       const list = Array.isArray(banksData) ? banksData : (Array.isArray(banksData?.data) ? banksData.data : []);
@@ -184,7 +186,7 @@ function SuppliersPageContent() {
       if (search.trim()) {
         queryParams.append("search", search.trim());
       }
-      const res = await fetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
       if (!res.ok) throw new Error("Failed to load suppliers listing");
       const data = await res.json();
       setSuppliers(data.data || []);
@@ -205,7 +207,7 @@ function SuppliersPageContent() {
   useEffect(() => {
     const loadBanks = async () => {
       try {
-        const banksRes = await fetch(`${API_BASE_URL}/bank`);
+        const banksRes = await authFetch(`${API_BASE_URL}/bank`);
         if (!banksRes.ok) return;
         const banksData = await banksRes.json();
         const list = Array.isArray(banksData) ? banksData : (Array.isArray(banksData?.data) ? banksData.data : []);
@@ -230,7 +232,7 @@ function SuppliersPageContent() {
         if (search.trim()) {
           queryParams.append("search", search.trim());
         }
-        const res = await fetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
+        const res = await authFetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
         if (!res.ok) throw new Error("Failed to load suppliers listing");
         const data = await res.json();
         setSuppliers(data.data || []);
@@ -313,7 +315,7 @@ function SuppliersPageContent() {
     if (!supplierToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/supplier/${supplierToDelete}`, {
+      const res = await authFetch(`${API_BASE_URL}/supplier/${supplierToDelete}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete supplier");
@@ -460,7 +462,7 @@ function SuppliersPageContent() {
     try {
       const url = editingSupplier ? `${API_BASE_URL}/supplier/${editingSupplier.id}` : `${API_BASE_URL}/supplier`;
       const method = editingSupplier ? "PATCH" : "POST";
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(supplierPayload),
@@ -488,7 +490,7 @@ function SuppliersPageContent() {
       if (search.trim()) {
         queryParams.append("search", search.trim());
       }
-      const res = await fetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/supplier?${queryParams.toString()}`);
       if (!res.ok) throw new Error("Failed to load suppliers for export");
       const fullSuppliers = await res.json();
 
@@ -652,24 +654,28 @@ function SuppliersPageContent() {
             <Eye className="h-3.5 w-3.5" />
             Show
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEditClick(row)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-            title="Edit Supplier"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => promptDeleteSupplier(row.id)}
-            className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-            title="Delete Supplier"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {can("update", "supplier") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEditClick(row)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+              title="Edit Supplier"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
+          {can("delete", "supplier") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => promptDeleteSupplier(row.id)}
+              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+              title="Delete Supplier"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -687,18 +693,16 @@ function SuppliersPageContent() {
         ]}
       >
         <div className="flex items-center gap-2">
-          {/* <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-9 text-xs rounded-xl font-bold gap-1.5 border-slate-200">
-            <Download className="h-4 w-4 text-slate-500" />
-            Export CSV
-          </Button> */}
-          <Button
-            size="sm"
-            onClick={handleAddClick}
-            className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            Add Supplier
-          </Button>
+          {can("create", "supplier") && (
+            <Button
+              size="sm"
+              onClick={handleAddClick}
+              className="h-9 text-xs bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              Add Supplier
+            </Button>
+          )}
         </div>
       </PageHeader>
 

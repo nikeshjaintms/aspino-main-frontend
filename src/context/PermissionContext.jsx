@@ -34,19 +34,35 @@ export function PermissionProvider({ children }) {
 
   const fetchPermissions = useCallback(async () => {
     try {
-      const token = getCookie("adminToken") || getCookie("userToken");
-      const userCookie = getCookie("adminUser") || getCookie("userData");
+      const token =
+        getCookie("adminToken") ||
+        getCookie("userToken") ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("adminToken") || localStorage.getItem("userToken")
+          : null);
+      const userCookie =
+        getCookie("adminUser") ||
+        getCookie("userData") ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("adminUser") || localStorage.getItem("userData")
+          : null);
 
       let parsedUser = null;
       if (userCookie) {
         try {
-          parsedUser = JSON.parse(decodeURIComponent(userCookie));
-          setUser(parsedUser);
-          if (parsedUser.roleRelation?.name || parsedUser.role) {
-            setRole(parsedUser.roleRelation?.name || parsedUser.role);
-          }
-          if (Array.isArray(parsedUser.permissions)) {
-            setPermissions(parsedUser.permissions);
+          parsedUser = typeof userCookie === "string" && (userCookie.startsWith("{") || userCookie.startsWith("%7B"))
+            ? JSON.parse(decodeURIComponent(userCookie))
+            : typeof userCookie === "object"
+            ? userCookie
+            : null;
+          if (parsedUser) {
+            setUser(parsedUser);
+            if (parsedUser.roleRelation?.name || parsedUser.role) {
+              setRole(parsedUser.roleRelation?.name || parsedUser.role);
+            }
+            if (Array.isArray(parsedUser.permissions)) {
+              setPermissions(parsedUser.permissions);
+            }
           }
         } catch (e) {
           console.error("Failed to parse user cookie", e);
@@ -123,9 +139,22 @@ export function PermissionProvider({ children }) {
     (action, subject) => {
       if (!ability) return false;
       if (isSuperAdmin) return true;
-      return ability.can(action, subject);
+      if (subject) {
+        return ability.can(action, subject);
+      }
+      if (typeof action === "string") {
+        const actLower = action.toLowerCase();
+        if (
+          Array.isArray(permissions) &&
+          permissions.some((p) => (p.name || "").toLowerCase() === actLower)
+        ) {
+          return true;
+        }
+        return ability.can("read", actLower) || ability.can("manage", actLower);
+      }
+      return false;
     },
-    [ability, isSuperAdmin]
+    [ability, isSuperAdmin, permissions]
   );
 
   const cannot = useCallback(
@@ -176,9 +205,10 @@ export function Can({ I: action, a: subject, do: altAction, on: altSubject, fall
   return can(act, subj) ? <>{children}</> : fallback;
 }
 
-export function RouteGuard({ action = "read", subject, fallback, children }) {
+export function RouteGuard({ action = "read", subject, permissionKey, fallback, children }) {
   const { can, loading } = usePermissions();
   const router = useRouter();
+  const targetSubject = subject || permissionKey;
 
   if (loading) {
     return (
@@ -189,7 +219,7 @@ export function RouteGuard({ action = "read", subject, fallback, children }) {
     );
   }
 
-  if (subject && !can(action, subject)) {
+  if (targetSubject && !can(action, targetSubject)) {
     if (fallback) return fallback;
 
     return (

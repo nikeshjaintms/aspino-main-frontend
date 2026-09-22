@@ -206,29 +206,76 @@ export function RolesManagerContent() {
         const parsed = parsePermissionCode(perm.name);
         subject = parsed.module;
       }
-      const key = (subject || "General").toLowerCase();
+      let key = (subject || "General").toLowerCase().trim();
+      if (key === "banks") key = "bank";
+      if (key === "suppliers") key = "supplier";
+      if (key === "customers") key = "customer";
+      if (key === "vendors") key = "vendor";
+      if (key === "storage_locations") key = "storage_location";
+      if (key === "products") key = "product";
+      if (key === "product_categories") key = "product_category";
+      if (key === "product_sub_categories") key = "product_sub_category";
+      if (key === "uoms") key = "uom";
+      if (key === "packing_materials") key = "packing_material";
+      if (key === "qc_specifications") key = "qc_specification";
+      if (key === "pass_categories") key = "pass_category";
+      if (key === "departments") key = "department";
+      if (key === "users") key = "user";
+      if (key === "roles") key = "role";
+      if (key === "vouchers") key = "voucher";
+      if (key === "accounts") key = "account";
+      if (key === "audit") key = "activity_logs";
 
       if (!groups[key]) {
         groups[key] = [];
       }
-      groups[key].push(perm);
+
+      // Check if permission with same name already exists in this group
+      const existing = groups[key].find(
+        (p) => (p.name || "").toLowerCase().trim() === (perm.name || "").toLowerCase().trim()
+      );
+
+      if (existing) {
+        if (!existing.allIds) existing.allIds = [existing.id];
+        if (!existing.allIds.includes(perm.id)) existing.allIds.push(perm.id);
+      } else {
+        groups[key].push({
+          ...perm,
+          allIds: [perm.id],
+        });
+      }
+    });
+
+    // Sort permissions inside each group: sidebar -> create -> read -> update -> delete -> others
+    const actionOrder = { sidebar: 1, create: 2, read: 3, update: 4, edit: 4, delete: 5, approve: 6, export: 7 };
+    Object.keys(groups).forEach((k) => {
+      groups[k].sort((a, b) => {
+        const aAct = (a.action || "").toLowerCase();
+        const bAct = (b.action || "").toLowerCase();
+        const orderA = a.name?.startsWith("sidebar-") ? 1 : actionOrder[aAct] || 50;
+        const orderB = b.name?.startsWith("sidebar-") ? 1 : actionOrder[bAct] || 50;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || "").localeCompare(b.name || "");
+      });
     });
 
     return groups;
   }, [allPermissions]);
 
-  // Toggle single permission
-  const togglePermission = (id) => {
+  // Toggle single permission chip
+  const togglePermission = (perm) => {
     if (!can("update", "roles")) {
       toast.error("You do not have permission to modify roles.");
       return;
     }
+    const ids = perm?.allIds || (perm?.id ? [perm.id] : []);
     setSelectedPermissionIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      const isAnyChecked = ids.some((id) => next.has(id));
+      if (isAnyChecked) {
+        ids.forEach((id) => next.delete(id));
       } else {
-        next.add(id);
+        ids.forEach((id) => next.add(id));
       }
       return next;
     });
@@ -241,15 +288,19 @@ export function RolesManagerContent() {
       return;
     }
     const allSelected = groupPermissions.every((p) =>
-      selectedPermissionIds.has(p.id)
+      (p.allIds || [p.id]).some((id) => selectedPermissionIds.has(id))
     );
 
     setSelectedPermissionIds((prev) => {
       const next = new Set(prev);
       if (allSelected) {
-        groupPermissions.forEach((p) => next.delete(p.id));
+        groupPermissions.forEach((p) => {
+          (p.allIds || [p.id]).forEach((id) => next.delete(id));
+        });
       } else {
-        groupPermissions.forEach((p) => next.add(p.id));
+        groupPermissions.forEach((p) => {
+          (p.allIds || [p.id]).forEach((id) => next.add(id));
+        });
       }
       return next;
     });
@@ -265,7 +316,12 @@ export function RolesManagerContent() {
     if (presetType === "READ_ONLY") {
       const readIds = new Set(
         list
-          .filter((p) => ["read", "export", "view"].includes((p.action || "").toLowerCase()) || p.name?.startsWith("read-"))
+          .filter(
+            (p) =>
+              ["read", "export", "view", "sidebar"].includes((p.action || "").toLowerCase()) ||
+              p.name?.startsWith("read-") ||
+              p.name?.startsWith("sidebar-")
+          )
           .map((p) => p.id)
       );
       setSelectedPermissionIds(readIds);
@@ -273,12 +329,14 @@ export function RolesManagerContent() {
     } else if (presetType === "CRUD") {
       const crudIds = new Set(
         list
-          .filter((p) =>
-            ["read", "create", "update", "delete"].includes((p.action || "").toLowerCase()) ||
-            p.name?.startsWith("read-") ||
-            p.name?.startsWith("create-") ||
-            p.name?.startsWith("update-") ||
-            p.name?.startsWith("delete-")
+          .filter(
+            (p) =>
+              ["read", "create", "update", "delete", "sidebar"].includes((p.action || "").toLowerCase()) ||
+              p.name?.startsWith("read-") ||
+              p.name?.startsWith("create-") ||
+              p.name?.startsWith("update-") ||
+              p.name?.startsWith("delete-") ||
+              p.name?.startsWith("sidebar-")
           )
           .map((p) => p.id)
       );
@@ -303,29 +361,40 @@ export function RolesManagerContent() {
     setSelectedPermissionIds((prev) => {
       const next = new Set(prev);
       if (actionType === "ALL") {
-        subjectPermissions.forEach((p) => next.add(p.id));
+        subjectPermissions.forEach((p) => {
+          (p.allIds || [p.id]).forEach((id) => next.add(id));
+        });
       } else if (actionType === "CLEAR") {
-        subjectPermissions.forEach((p) => next.delete(p.id));
+        subjectPermissions.forEach((p) => {
+          (p.allIds || [p.id]).forEach((id) => next.delete(id));
+        });
       } else if (actionType === "READ") {
         subjectPermissions.forEach((p) => {
-          if (["read", "export", "view"].includes((p.action || "").toLowerCase()) || p.name?.startsWith("read-")) {
-            next.add(p.id);
+          const ids = p.allIds || [p.id];
+          if (
+            ["read", "export", "view", "sidebar"].includes((p.action || "").toLowerCase()) ||
+            p.name?.startsWith("read-") ||
+            p.name?.startsWith("sidebar-")
+          ) {
+            ids.forEach((id) => next.add(id));
           } else {
-            next.delete(p.id);
+            ids.forEach((id) => next.delete(id));
           }
         });
       } else if (actionType === "CRUD") {
         subjectPermissions.forEach((p) => {
+          const ids = p.allIds || [p.id];
           if (
-            ["read", "create", "update", "delete"].includes((p.action || "").toLowerCase()) ||
+            ["read", "create", "update", "delete", "sidebar"].includes((p.action || "").toLowerCase()) ||
             p.name?.startsWith("read-") ||
             p.name?.startsWith("create-") ||
             p.name?.startsWith("update-") ||
-            p.name?.startsWith("delete-")
+            p.name?.startsWith("delete-") ||
+            p.name?.startsWith("sidebar-")
           ) {
-            next.add(p.id);
+            ids.forEach((id) => next.add(id));
           } else {
-            next.delete(p.id);
+            ids.forEach((id) => next.delete(id));
           }
         });
       }
@@ -1156,8 +1225,8 @@ export function RolesManagerContent() {
                   </div>
                 ) : (
                   Object.entries(filteredSubjectGroups).map(([subject, perms]) => {
-                    const allSelected = perms.every((p) => selectedPermissionIds.has(p.id));
-                    const selectedCount = perms.filter((p) => selectedPermissionIds.has(p.id)).length;
+                    const allSelected = perms.every((p) => (p.allIds || [p.id]).some((id) => selectedPermissionIds.has(id)));
+                    const selectedCount = perms.filter((p) => (p.allIds || [p.id]).some((id) => selectedPermissionIds.has(id))).length;
 
                     return (
                       <div
@@ -1211,14 +1280,14 @@ export function RolesManagerContent() {
                         {/* Direct Permission Chips */}
                         <div className="flex flex-wrap gap-2">
                           {perms.map((perm) => {
-                            const checked = selectedPermissionIds.has(perm.id);
+                            const checked = (perm.allIds || [perm.id]).some((id) => selectedPermissionIds.has(id));
                             const colorStyle = getActionColorStyle(perm.action, checked);
 
                             return (
                               <button
                                 key={perm.id}
                                 type="button"
-                                onClick={() => togglePermission(perm.id)}
+                                onClick={() => togglePermission(perm)}
                                 className={`group relative flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-all duration-150 cursor-pointer ${colorStyle}`}
                               >
                                 <div

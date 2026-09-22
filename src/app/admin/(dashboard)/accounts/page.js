@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { usePermissions, RouteGuard } from "@/context/PermissionContext";
 
 // Standard Chart of Accounts Groupings
 const ACCOUNT_GROUPS = {
@@ -80,39 +81,34 @@ const ACCOUNT_GROUPS = {
   LIABILITY: [
     "Current Liabilities",
     "Accounts Payable",
-    "Duties & Taxes",
-    "Provisions & Accruals",
-    "Short Term Borrowings",
-    "Non-Current Liabilities",
+    "Short Term Debt",
+    "Accrued Liabilities",
+    "Taxes Payable",
     "Long Term Debt",
     "Other Liabilities",
   ],
   EQUITY: [
-    "Shareholders Equity",
-    "Capital",
-    "Reserves & Surplus",
+    "Common Stock",
     "Retained Earnings",
-    "Owner Drawings",
+    "Owner Capital",
+    "Capital Reserves",
   ],
   REVENUE: [
     "Operating Revenue",
-    "Direct Sales",
-    "Export Sales",
-    "Job Work Income",
-    "Interest & Other Income",
+    "Sales Revenue",
+    "Service Revenue",
+    "Interest Income",
+    "Other Income",
   ],
   EXPENSE: [
-    "Cost of Goods Sold (COGS)",
-    "Direct Materials",
-    "Direct Labor",
+    "Cost of Goods Sold",
     "Operating Expenses",
-    "Plant Overhead",
-    "Quality & Compliance",
-    "Logistics & Transport",
-    "Administrative Expenses",
-    "Sales & Marketing",
-    "Finance Costs",
+    "Salaries & Wages",
+    "Rent & Utilities",
     "Depreciation & Amortization",
+    "Interest Expense",
+    "Tax Expense",
+    "Administrative Expenses",
   ],
 };
 
@@ -177,7 +173,8 @@ const DEFAULT_BANKS = [
   { id: "bank-9", name: "Union Bank of India" },
 ];
 
-export default function AccountsPage() {
+function AccountsContent() {
+  const { can } = usePermissions();
   const dispatch = useDispatch();
   const { accounts = [], loading, submitting } = useSelector((state) => state.accounts || {});
 
@@ -716,24 +713,28 @@ export default function AccountsPage() {
             >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-blue-600 rounded-xl"
-              onClick={() => handleOpenEdit(acc)}
-              title="Edit Account"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl"
-              onClick={() => handleDeletePrompt(acc)}
-              title="Delete Account"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "accounts") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-blue-600 rounded-xl"
+                onClick={() => handleOpenEdit(acc)}
+                title="Edit Account"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "accounts") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl"
+                onClick={() => handleDeletePrompt(acc)}
+                title="Delete Account"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -769,14 +770,16 @@ export default function AccountsPage() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button
-            onClick={handleOpenCreate}
-            size="sm"
-            className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5 text-xs h-9"
-          >
-            <Plus className="h-4 w-4" />
-            Add GL Account
-          </Button>
+          {can("create", "accounts") && (
+            <Button
+              onClick={handleOpenCreate}
+              size="sm"
+              className="bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl gap-1.5 text-xs h-9"
+            >
+              <Plus className="h-4 w-4" />
+              Add GL Account
+            </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -1763,3 +1766,12 @@ export default function AccountsPage() {
     </div>
   );
 }
+
+export default function AccountsPage() {
+  return (
+    <RouteGuard permissionKey="accounts">
+      <AccountsContent />
+    </RouteGuard>
+  );
+}
+

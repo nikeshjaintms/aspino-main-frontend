@@ -43,6 +43,23 @@ export function buildAbilityFor(permissions = [], user = null) {
       const action = perm.action.trim().toLowerCase();
       const subject = perm.module.trim().toLowerCase();
       can(action, subject);
+
+      // Register singular/plural/hyphen variants for seamless matching
+      const norm = subject.replace(/_/g, "-");
+      const unnorm = subject.replace(/-/g, "_");
+      const sing = subject.endsWith("s") ? subject.slice(0, -1) : subject;
+      const plur = subject.endsWith("s") ? subject : `${subject}s`;
+
+      can(action, norm);
+      can(action, unnorm);
+      can(action, sing);
+      can(action, plur);
+
+      if (perm.name) {
+        can(perm.name.toLowerCase(), subject);
+        can(perm.name.toLowerCase(), norm);
+        can(perm.name.toLowerCase(), unnorm);
+      }
     }
   });
 

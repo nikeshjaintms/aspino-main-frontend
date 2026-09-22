@@ -32,10 +32,13 @@ import {
 import { customToast } from "@/components/custom-toast";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { generateUomCode } from "@/lib/code-generator";
+import { RouteGuard, usePermissions } from "@/context/PermissionContext";
+import { authFetch } from "@/lib/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 export default function UomMasterPage() {
+  const { can } = usePermissions();
   const [uoms, setUoms] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +93,7 @@ export default function UomMasterPage() {
       if (debouncedSearch.trim()) {
         queryParams.append("search", debouncedSearch.trim());
       }
-      const res = await fetch(`${API_BASE_URL}/uom?${queryParams.toString()}`);
+      const res = await authFetch(`${API_BASE_URL}/uom?${queryParams.toString()}`);
       if (!res.ok) {
         setUoms([]);
         return;
@@ -221,7 +224,7 @@ export default function UomMasterPage() {
 
       const method = editingUom ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -260,7 +263,7 @@ export default function UomMasterPage() {
     if (!uomToDelete) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/uom/${uomToDelete.id}`, {
+      const res = await authFetch(`${API_BASE_URL}/uom/${uomToDelete.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -367,24 +370,28 @@ export default function UomMasterPage() {
         const item = row?.original || row;
         return (
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleOpenEdit(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-              title="Edit UOM"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteClick(item)}
-              className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-              title="Delete UOM"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {can("update", "uom") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleOpenEdit(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                title="Edit UOM"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {can("delete", "uom") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteClick(item)}
+                className="h-8 w-8 text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                title="Delete UOM"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -392,8 +399,9 @@ export default function UomMasterPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <RouteGuard subject="uom" action="read">
+      <div className="space-y-6">
+        <PageHeader
         title="UOM Master (Unit of Measurement)"
         description="Configure standard metric units, dosage forms, packaging sizes, and conversion factors."
         breadcrumbs={[
@@ -402,13 +410,15 @@ export default function UomMasterPage() {
           { label: "UOM Master" },
         ]}
       >
-        <Button
-          onClick={handleOpenAdd}
-          className="gap-2 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl"
-        >
-          <Plus className="h-4 w-4" />
-          Add UOM
-        </Button>
+        {can("create", "uom") && (
+          <Button
+            onClick={handleOpenAdd}
+            className="gap-2 bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-700 hover:to-blue-800 text-white shadow-lg shadow-sky-600/20 font-bold rounded-xl"
+          >
+            <Plus className="h-4 w-4" />
+            Add UOM
+          </Button>
+        )}
       </PageHeader>
 
       {/* Metrics Row */}
@@ -738,6 +748,7 @@ export default function UomMasterPage() {
         onConfirm={handleConfirmDelete}
         loading={deleteLoading}
       />
-    </div>
+      </div>
+    </RouteGuard>
   );
 }
