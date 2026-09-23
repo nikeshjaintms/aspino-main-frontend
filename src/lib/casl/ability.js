@@ -55,6 +55,35 @@ export function buildAbilityFor(permissions = [], user = null) {
       can(action, sing);
       can(action, plur);
 
+      if (subject === "activity_logs" || subject === "activity-logs" || subject === "audit") {
+        can(action, "audit");
+        can(action, "activity_logs");
+        can(action, "activity-logs");
+      }
+      if (subject === "gatepass" || subject === "gate_pass" || subject === "gate-pass") {
+        can(action, "gatepass");
+        can(action, "gate_pass");
+        can(action, "gate-pass");
+      }
+      if (subject === "pass_category" || subject === "pass-category" || subject === "pass_categories" || subject === "pass-categories") {
+        can(action, "pass_category");
+        can(action, "pass-category");
+        can(action, "pass_categories");
+        can(action, "pass-categories");
+      }
+      if (subject === "customer_ledger" || subject === "customer-ledger") {
+        can(action, "customer_ledger");
+        can(action, "customer-ledger");
+      }
+      if (subject === "supplier_ledger" || subject === "supplier-ledger") {
+        can(action, "supplier_ledger");
+        can(action, "supplier-ledger");
+      }
+      if (subject === "financial_reports" || subject === "financial-reports") {
+        can(action, "financial_reports");
+        can(action, "financial-reports");
+      }
+
       if (perm.name) {
         can(perm.name.toLowerCase(), subject);
         can(perm.name.toLowerCase(), norm);
