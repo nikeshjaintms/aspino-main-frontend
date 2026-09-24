@@ -127,7 +127,8 @@ function UsersPageContent() {
   }, [search]);
 
   // Filter and paginate locally since backend returns all users currently
-  const filteredUsers = users.filter((u) => 
+  const userList = Array.isArray(users) ? users : (Array.isArray(users?.data) ? users.data : []);
+  const filteredUsers = userList.filter((u) => 
     (u.name || "").toLowerCase().includes(debouncedSearch.toLowerCase()) || 
     (u.email || "").toLowerCase().includes(debouncedSearch.toLowerCase())
   );
@@ -136,7 +137,7 @@ function UsersPageContent() {
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   // Count users with elevated (non-standard) roles
-  const totalAdmins = users.filter((u) => {
+  const totalAdmins = userList.filter((u) => {
     const roleName = (u.roleRelation?.name || u.role || "").toUpperCase();
     return roleName === "ADMIN" || roleName === "SUPER_ADMIN";
   }).length;

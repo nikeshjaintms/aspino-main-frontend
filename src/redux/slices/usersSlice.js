@@ -130,7 +130,15 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = Array.isArray(action.payload) ? action.payload : [];
+        if (Array.isArray(action.payload)) {
+          state.users = action.payload;
+        } else if (Array.isArray(action.payload?.data)) {
+          state.users = action.payload.data;
+        } else if (Array.isArray(action.payload?.users)) {
+          state.users = action.payload.users;
+        } else {
+          state.users = [];
+        }
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
@@ -144,7 +152,10 @@ const usersSlice = createSlice({
       })
       .addCase(createUser.fulfilled, (state, action) => {
         state.submitting = false;
-        state.users.unshift(action.payload);
+        const newUser = action.payload?.data || action.payload;
+        if (newUser && (newUser.id || newUser.email)) {
+          state.users.unshift(newUser);
+        }
       })
       .addCase(createUser.rejected, (state, action) => {
         state.submitting = false;
@@ -158,9 +169,12 @@ const usersSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.submitting = false;
-        const index = state.users.findIndex((u) => u.id === action.payload.id);
-        if (index !== -1) {
-          state.users[index] = action.payload;
+        const updatedUser = action.payload?.data || action.payload;
+        if (updatedUser && updatedUser.id) {
+          const index = state.users.findIndex((u) => u.id === updatedUser.id);
+          if (index !== -1) {
+            state.users[index] = updatedUser;
+          }
         }
       })
       .addCase(updateUser.rejected, (state, action) => {
@@ -175,7 +189,8 @@ const usersSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.submitting = false;
-        state.users = state.users.filter((u) => u.id !== action.payload);
+        const deletedId = action.payload?.id || action.payload;
+        state.users = state.users.filter((u) => u.id !== deletedId);
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.submitting = false;
